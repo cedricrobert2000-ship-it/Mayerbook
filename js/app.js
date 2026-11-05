@@ -262,7 +262,8 @@ const Actions = {
   'open-ai': () => openAiDialog(),
   'ai-add': (d, el) => aiAddSelected(el),
   'ai-edit': d => aiEdit(Number(d.index)),
-  'ai-correct': (d, el) => aiProposeCorrection(el),
+  'ai-correct': () => openCorrectionHelper(),
+  'copy-prompt': () => copyText($('#ai-prompt').value),
 
   // Prof : correction
   'insert-model': () => {

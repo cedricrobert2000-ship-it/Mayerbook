@@ -540,3 +540,9 @@ details.card > .content { margin-top: 10px; }
   .subject-row .tag { min-width: 90px; }
 }
 body[data-role="student"] .container { max-width: 780px; }
+
+/* Création avec une IA externe */
+.steps { margin: 0; padding-left: 20px; font-size: .9rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.prompt-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+.prompt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.prompt-box textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem !important; }

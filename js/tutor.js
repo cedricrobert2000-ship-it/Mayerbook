@@ -214,10 +214,10 @@ async function viewTutorWeek(wid) {
         <div class="card ai-card">
           <div>
             <h3>✨ Créer avec l’IA</h3>
-            <p class="small muted">Génère des exercices, un quiz ou des fiches de révision adaptés au niveau de ${esc(firstName(s.name))},
-            à partir d’un sujet ou d’un fichier (PDF, photo d’une fiche…).</p>
+            <p class="small muted">Prépare en un clic la demande à coller dans Claude ou ChatGPT (exercices, quiz, notions
+            adaptés au niveau de ${esc(firstName(s.name))}), puis importe sa réponse ici.</p>
           </div>
-          <button class="btn primary" data-action="open-ai">Générer</button>
+          <button class="btn primary" data-action="open-ai">Créer / importer</button>
         </div>
 
         <div class="card">
@@ -378,7 +378,7 @@ async function viewTutorCopy(subId) {
         <form class="card form-inline" id="correction-form">
           <div class="section-head tight">
             <h2>✍️ Ma correction détaillée</h2>
-            <button type="button" class="btn small" data-action="ai-correct" ${sent ? '' : 'disabled'}>✨ Proposer avec l’IA</button>
+            <button type="button" class="btn small" data-action="ai-correct" ${sent ? '' : 'disabled'}>✨ Corriger avec Claude / ChatGPT</button>
           </div>
           <textarea name="feedback" rows="10" placeholder="Explique ce qui est juste, chaque erreur et comment progresser…">${esc(sub.feedback)}</textarea>
           <span class="hint">**texte** pour mettre en gras. Ta correction n’est visible par l’élève qu’après avoir cliqué sur « Envoyer la correction ».</span>

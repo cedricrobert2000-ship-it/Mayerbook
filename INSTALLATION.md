@@ -6,8 +6,9 @@ suis ces étapes une seule fois.
 
 Il te faut :
 - un compte **Supabase** (gratuit) : base de données, comptes, fichiers ;
-- une clé **API Claude** (payante à l'usage) pour l'IA ;
 - le site publié sur **GitHub Pages** (gratuit).
+
+L'IA (Claude, ChatGPT…) s'utilise depuis ton propre compte, par copier-coller : rien à configurer, aucun coût en plus.
 
 ---
 
@@ -24,30 +25,16 @@ Il te faut :
 2. Ouvre le fichier [`supabase/schema.sql`](supabase/schema.sql) de ce dépôt, copie **tout** son contenu et colle-le.
 3. Clique sur **Run**. Tu dois voir « Success ».
 
-## 3. Installer les deux fonctions serveur
+## 3. Installer la fonction de création des comptes élèves
 
 Menu **Edge Functions**, puis **Deploy a new function** et **Via Editor** :
+1. Nomme la fonction exactement `eleves`.
+2. Remplace tout le code d'exemple par le contenu de [`supabase/functions/eleves/index.ts`](supabase/functions/eleves/index.ts).
+3. Clique sur **Deploy function**.
 
-| Nom de la fonction (exactement) | Fichier à copier-coller |
-|---|---|
-| `eleves` | [`supabase/functions/eleves/index.ts`](supabase/functions/eleves/index.ts) |
-| `ia` | [`supabase/functions/ia/index.ts`](supabase/functions/ia/index.ts) |
+> Avec la ligne de commande Supabase, c'est aussi possible : `supabase functions deploy eleves`.
 
-Pour chacune : remplace tout le code d'exemple par celui du fichier, donne le nom indiqué, puis **Deploy function**.
-
-> Avec la ligne de commande Supabase, c'est aussi possible : `supabase functions deploy eleves` et `supabase functions deploy ia`.
-
-## 4. Ajouter la clé de l'IA
-
-1. Sur https://console.anthropic.com : crée un compte, ajoute quelques euros de crédit
-   (**Billing**), puis **API Keys** et **Create Key**. Copie la clé (`sk-ant-…`).
-2. Dans Supabase, menu **Edge Functions**, onglet **Secrets** :
-   ajoute un secret nommé `ANTHROPIC_API_KEY` avec ta clé comme valeur.
-
-La clé reste sur le serveur : ni les élèves ni le navigateur ne la voient jamais.
-Coût indicatif : quelques centimes par génération d'exercices, de quiz ou de proposition de correction.
-
-## 5. Brancher le site sur Supabase
+## 4. Brancher le site sur Supabase
 
 1. Dans Supabase, ouvre **Project Settings**, puis **API**. Copie :
    - **Project URL** (ex : `https://abcd1234.supabase.co`) ;
@@ -61,14 +48,14 @@ Coût indicatif : quelques centimes par génération d'exercices, de quiz ou de 
    ```
 3. Clique sur **Commit changes**.
 
-## 6. Publier le site (GitHub Pages)
+## 5. Publier le site (GitHub Pages)
 
 1. Sur GitHub : **Settings**, puis **Pages**.
 2. *Source* : **Deploy from a branch**, branche `main`, dossier `/ (root)`, puis **Save**.
 3. Après 1 à 2 minutes, le site est disponible sur `https://<ton-compte>.github.io/Mayerbook/`.
 4. Dans Supabase : **Authentication**, puis **URL Configuration**. Mets cette adresse dans **Site URL**.
 
-## 7. Créer ton compte prof
+## 6. Créer ton compte prof
 
 1. Ouvre le site, onglet **👩‍🏫 Prof**, saisis ton e-mail et un mot de passe,
    puis clique sur **Première utilisation ? Créer le compte prof**.
@@ -87,6 +74,5 @@ C'est prêt 🎉 Crée tes élèves : Mayerbook te donne leur **identifiant** et
 |---|---|
 | « Ce compte n'a pas accès à l'espace prof » | Un autre compte prof existe déjà. Dans Supabase (**Table Editor**, table `tutors`), supprime la ligne en trop. |
 | Création d'élève : « Failed to send a request to the Edge Function » | La fonction `eleves` n'est pas déployée ou mal nommée (étape 3). |
-| « La clé API Claude n'est pas configurée » | Ajoute le secret `ANTHROPIC_API_KEY` (étape 4). |
-| « Clé API Claude invalide » | Recrée une clé sur console.anthropic.com et remplace le secret. |
-| Le site reste en mode démo | Vérifie `js/config.js` (étape 5) puis recharge la page (Ctrl+F5). |
+| L'import depuis l'IA échoue | Copie bien toute la réponse de l'IA (le bloc qui commence par `{`). Au besoin, redemande-lui de répondre « uniquement avec le JSON ». |
+| Le site reste en mode démo | Vérifie `js/config.js` (étape 4) puis recharge la page (Ctrl+F5). |

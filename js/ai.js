@@ -1,18 +1,122 @@
 'use strict';
 
 /* =========================================================
-   Génération par l'IA (espace prof)
+   Création avec une IA externe (Claude, ChatGPT…)
+   L'application prépare la demande (prompt) ; le prof la colle
+   dans l'IA de son choix puis recolle la réponse ici.
+   Aucune clé API, aucun coût supplémentaire.
    ========================================================= */
 
-const AI = { result: null, params: null, file: null };
+const AI = { result: null, params: null, file: null, uploaded: null };
+
+const AI_LINKS = `
+  <a class="btn small" href="https://claude.ai/new" target="_blank" rel="noopener">Ouvrir Claude ↗</a>
+  <a class="btn small" href="https://chatgpt.com/" target="_blank" rel="noopener">Ouvrir ChatGPT ↗</a>`;
+
+/* ---------- Demande (prompt) de création ---------- */
+
+function buildCreationPrompt(p) {
+  const level = `${p.level}${p.subject ? ', en ' + p.subject : ''}`;
+  const ctx = [
+    `Je suis professeur particulier en France. Mon élève est en ${level}.`,
+    p.topic ? `Sujet / notion : ${p.topic}.` : '',
+    p.difficulty ? `Difficulté : ${p.difficulty}.` : '',
+    p.withDoc ? 'Appuie-toi sur le document que je joins (si c’est une fiche d’exercices, reprends ses exercices fidèlement).' : '',
+    p.instructions ? `Consignes : ${p.instructions}` : '',
+    'Respecte les programmes de l’Éducation nationale et adapte le vocabulaire à l’âge de l’élève.',
+    'Écris les calculs en texte simple (ex : 3/4, x², √2), sans LaTeX. Tu peux utiliser **gras**. N’invente pas de liens internet.'
+  ].filter(Boolean).join('\n');
+
+  const formats = {
+    exercice: {
+      ask: `Crée ${p.count} exercice(s). Pour chacun : un titre, un énoncé complet (l’élève répondra par écrit ou en photo) et une correction détaillée étape par étape pour moi.`,
+      json: `{
+  "type": "exercice",
+  "items": [
+    { "title": "Titre court", "content": "Énoncé complet", "model_answer": "Correction détaillée" }
+  ]
+}`
+    },
+    notion: {
+      ask: `Rédige ${p.count} fiche(s) « notion à revoir » : le nom de la notion et un rappel de cours court avec un exemple.`,
+      json: `{
+  "type": "notion",
+  "items": [
+    { "title": "Nom de la notion", "content": "Rappel de cours avec un exemple" }
+  ]
+}`
+    },
+    quiz: {
+      ask: `Crée un quiz de ${p.count} question(s), en variant les types : "qcm" (3 ou 4 choix), "vf" (vrai/faux) et "texte" (réponse courte : un nombre ou un mot, sans ambiguïté).`,
+      json: `{
+  "type": "quiz",
+  "quiz": {
+    "title": "Titre du quiz",
+    "intro": "Consigne courte (peut être vide)",
+    "questions": [
+      { "type": "qcm", "prompt": "Question ?", "options": ["Choix A", "Choix B", "Choix C"], "correct_option": 1, "answer_text": "", "explanation": "Pourquoi" },
+      { "type": "vf", "prompt": "Affirmation.", "options": ["Vrai", "Faux"], "correct_option": 0, "answer_text": "", "explanation": "Pourquoi" },
+      { "type": "texte", "prompt": "Combien font 6 × 7 ?", "options": [], "correct_option": -1, "answer_text": "42|quarante-deux", "explanation": "" }
+    ]
+  }
+}`
+    }
+  };
+  const f = formats[p.type];
+  return `${ctx}\n\n${f.ask}\n\n` +
+    `Réponds UNIQUEMENT avec un bloc de code JSON valide, sans texte avant ni après, exactement dans ce format :\n` +
+    '```json\n' + f.json + '\n```' +
+    (p.type === 'quiz' ? '\n"correct_option" est la position de la bonne réponse en partant de 0. Pour "texte", mets les réponses acceptées dans "answer_text", séparées par |.' : '');
+}
+
+/** Extrait et lit le JSON collé (tolère les blocs ```json, le texte autour, les guillemets typographiques). */
+function parseAiReply(text, expectedType) {
+  let t = String(text || '').trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1];
+  const start = t.indexOf('{'), end = t.lastIndexOf('}');
+  if (start < 0 || end < start) throw new Error('Je ne trouve pas de JSON dans le texte collé. Copie bien toute la réponse de l’IA.');
+  t = t.slice(start, end + 1)
+    .replace(/[“”]/g, '"')
+    .replace(/,\s*([}\]])/g, '$1'); // virgules en trop
+  let data;
+  try { data = JSON.parse(t); }
+  catch { throw new Error('Le JSON collé est incomplet ou abîmé. Redemande à l’IA de répondre « uniquement avec le JSON ».'); }
+
+  // Tolère les variantes : liste directe, quiz sans enveloppe…
+  if (Array.isArray(data)) data = { items: data };
+  let type = data.type || expectedType;
+  if (!data.quiz && Array.isArray(data.questions)) { data = { quiz: data }; type = 'quiz'; }
+  if (type === 'quiz') {
+    if (!data.quiz?.questions?.length) throw new Error('Aucune question trouvée dans la réponse.');
+    return { type: 'quiz', quiz: data.quiz };
+  }
+  const items = (data.items || data.exercices || data.notions || []).filter(x => x && (x.title || x.content));
+  if (!items.length) throw new Error('Aucun élément trouvé dans la réponse.');
+  return {
+    type: type === 'notion' ? 'notion' : 'exercice',
+    items: items.map(x => ({
+      title: String(x.title || x.titre || 'Sans titre'),
+      content: String(x.content || x.enonce || x.contenu || ''),
+      model_answer: String(x.model_answer || x.correction || '')
+    }))
+  };
+}
+
+/* ---------- Fenêtre « Créer avec l'IA » ---------- */
 
 function openAiDialog() {
   const { student: s } = T.week;
   const subjects = unique([...(s.subjects || []), ...SUBJECTS]);
   const d = Modal.open(`
     <form class="form" id="ai-form">
-      <h2>✨ Créer avec l’IA</h2>
-      ${Api.mode === 'demo' ? '<p class="notice">Mode démo : l’IA renvoie un exemple fictif. Elle rédige un vrai contenu une fois Supabase et la clé Claude configurés.</p>' : ''}
+      <h2>✨ Créer avec Claude ou ChatGPT</h2>
+      <ol class="steps">
+        <li>Choisis ce que tu veux : la demande se prépare automatiquement.</li>
+        <li>Copie-la et colle-la dans Claude ou ChatGPT (joins ton document si besoin).</li>
+        <li>Copie la réponse de l’IA, colle-la en bas et clique sur <strong>Importer</strong>.</li>
+      </ol>
+
       <fieldset class="field"><legend>Que veux-tu créer ?</legend>
         <div class="seg">
           <label><input type="radio" name="type" value="exercice" checked><span>✏️ Exercices</span></label>
@@ -27,77 +131,89 @@ function openAiDialog() {
           <select name="level">${LEVELS.map(l => `<option ${l === s.level ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       </div>
       <label class="field"><span>Sujet / notion</span>
-        <input name="topic" maxlength="200" placeholder="Ex : le théorème de Pythagore, le passé composé, les fractions…"></label>
+        <input name="topic" maxlength="200" placeholder="Ex : le théorème de Pythagore, le passé composé…"></label>
       <div class="row">
         <label class="field"><span id="count-label">Nombre d’exercices</span>
-          <input name="count" type="number" min="1" max="10" value="3"></label>
+          <input name="count" type="number" min="1" max="20" value="3"></label>
         <label class="field"><span>Difficulté</span>
           <select name="difficulty"><option>facile</option><option selected>moyen</option><option>difficile</option></select></label>
       </div>
-      <div class="field">
-        <span>À partir d’un fichier <span class="muted">(optionnel : PDF, photo d’une fiche, texte)</span></span>
-        <input type="file" name="file" accept="application/pdf,image/jpeg,image/png,image/webp,text/plain">
-        <span class="hint">Ex : importe une fiche d’exercices pour la convertir, ou un cours pour en tirer un quiz.</span>
-        <label class="check" id="attach-wrap" hidden><input type="checkbox" name="attach" checked> Joindre aussi ce fichier aux exercices pour l’élève</label>
-      </div>
       <label class="field"><span>Consignes supplémentaires <span class="muted">(optionnel)</span></span>
-        <textarea name="instructions" rows="2" placeholder="Ex : avec des situations de la vie quotidienne, sans fractions…"></textarea></label>
+        <textarea name="instructions" rows="2" placeholder="Ex : avec des situations de la vie quotidienne…"></textarea></label>
+      <label class="check"><input type="checkbox" name="withDoc"> Je joins un document à l’IA (fiche d’exercices, cours, photo…)</label>
+
+      <div class="prompt-box">
+        <div class="prompt-head"><strong>① Demande à copier</strong>
+          <div class="actions"><button type="button" class="btn small primary" data-action="copy-prompt">📋 Copier</button>${AI_LINKS}</div></div>
+        <textarea id="ai-prompt" rows="7" readonly></textarea>
+      </div>
+
+      <label class="field"><span>② Colle ici la réponse de l’IA</span>
+        <textarea name="reply" rows="6" placeholder="Colle toute la réponse (le bloc JSON)…"></textarea></label>
+      <div class="field">
+        <span>Fichier à joindre aux exercices pour l’élève <span class="muted">(optionnel)</span></span>
+        <input type="file" name="file" accept="application/pdf,image/*,.doc,.docx,.txt">
+      </div>
       <p class="form-error" hidden></p>
       <div class="form-actions">
         <button type="button" class="btn ghost" data-action="close-modal">Annuler</button>
-        <button class="btn primary">✨ Générer</button>
+        <button class="btn primary">Importer</button>
       </div>
     </form>`, { wide: true });
 
   const form = $('#ai-form', d);
-  const sync = () => {
-    const type = form.elements.type.value;
-    $('#count-label', d).textContent = { exercice: 'Nombre d’exercices', quiz: 'Nombre de questions', notion: 'Nombre de notions' }[type];
-    if (type === 'quiz' && Number(form.elements.count.value) < 5) form.elements.count.value = 5;
-    if (type !== 'quiz' && Number(form.elements.count.value) > 5) form.elements.count.value = 3;
-    $('#attach-wrap', d).hidden = !(form.elements.file.files.length && type !== 'quiz');
-  };
-  form.addEventListener('change', sync);
   if (s.subjects?.[0]) form.elements.subject.value = s.subjects[0];
+  let lastType = 'exercice';
+  const params = () => {
+    const f = new FormData(form);
+    return {
+      type: f.get('type'), subject: f.get('subject'), level: f.get('level'),
+      topic: String(f.get('topic')).trim(), count: Math.min(Math.max(Number(f.get('count')) || 3, 1), 20),
+      difficulty: f.get('difficulty'), instructions: String(f.get('instructions')).trim(), withDoc: !!f.get('withDoc')
+    };
+  };
+  const sync = () => {
+    const p = params();
+    if (p.type !== lastType) {
+      form.elements.count.value = p.type === 'quiz' ? 8 : 3;
+      lastType = p.type;
+      p.count = Number(form.elements.count.value);
+    }
+    $('#count-label', d).textContent = { exercice: 'Nombre d’exercices', quiz: 'Nombre de questions', notion: 'Nombre de notions' }[p.type];
+    $('#ai-prompt', d).value = buildCreationPrompt(p);
+  };
+  form.addEventListener('input', e => { if (e.target.name !== 'reply') sync(); });
+  form.addEventListener('change', e => { if (e.target.name !== 'reply' && e.target.name !== 'file') sync(); });
+  sync();
 
-  form.onsubmit = async e => {
+  form.onsubmit = e => {
     e.preventDefault();
     const errEl = $('.form-error', d);
     errEl.hidden = true;
-    const f = new FormData(form);
-    const file = form.elements.file.files[0] || null;
-    if (!f.get('topic') && !file) { errEl.textContent = 'Indique un sujet ou importe un fichier.'; errEl.hidden = false; return; }
-    if (file && file.size > 15e6) { errEl.textContent = 'Fichier trop lourd (15 Mo max).'; errEl.hidden = false; return; }
-    AI.params = {
-      mode: 'generer', type: f.get('type'), subject: f.get('subject'), level: f.get('level'),
-      topic: String(f.get('topic')).trim(), count: Number(f.get('count')), difficulty: f.get('difficulty'),
-      instructions: String(f.get('instructions')).trim()
-    };
-    AI.file = file && f.get('attach') && AI.params.type !== 'quiz' ? file : null;
+    const p = params();
     try {
-      await busy(form.querySelector('button.primary'), 'L’IA rédige… (jusqu’à 1 minute)', async () => {
-        const body = { ...AI.params };
-        if (file) body.file = { name: file.name, mime: file.type || 'text/plain', data: await readFileBase64(file) };
-        AI.result = await Api.ai(body);
-      });
-      showAiPreview();
+      AI.result = parseAiReply(form.elements.reply.value, p.type);
     } catch (ex) {
-      errEl.textContent = ex.message; errEl.hidden = false;
+      errEl.textContent = ex.message; errEl.hidden = false; return;
     }
+    AI.params = p;
+    AI.file = AI.result.type === 'quiz' ? null : (form.elements.file.files[0] || null);
+    AI.uploaded = null;
+    showAiPreview();
   };
 }
 
-/** Convertit un quiz généré en élément + corrigé. */
+/** Convertit un quiz importé en élément + corrigé. */
 function quizToItem(q) {
   const questions = [], answers = {};
   (q.questions || []).forEach((x, i) => {
     const id = 'q' + (i + 1);
-    const type = ['qcm', 'vf', 'texte'].includes(x.type) ? x.type : 'qcm';
-    const options = type === 'vf' ? ['Vrai', 'Faux'] : type === 'texte' ? [] : (x.options || []).filter(Boolean);
-    questions.push({ id, type, prompt: x.prompt, options });
+    const type = ['qcm', 'vf', 'texte'].includes(x.type) ? x.type : (x.options?.length ? 'qcm' : 'texte');
+    const options = type === 'vf' ? ['Vrai', 'Faux'] : type === 'texte' ? [] : (x.options || []).map(String).filter(Boolean);
+    questions.push({ id, type, prompt: String(x.prompt || x.question || ''), options });
     answers[id] = {
-      answer: type === 'texte' ? (x.answer_text || '') : Math.max(0, Math.min(Number(x.correct_option) || 0, options.length - 1)),
-      explanation: x.explanation || ''
+      answer: type === 'texte' ? String(x.answer_text ?? x.answer ?? '') : Math.max(0, Math.min(Number(x.correct_option) || 0, options.length - 1)),
+      explanation: String(x.explanation || '')
     };
   });
   return {
@@ -109,7 +225,7 @@ function quizToItem(q) {
 function aiPresets() {
   const r = AI.result;
   if (r.type === 'quiz') return [quizToItem(r.quiz)];
-  return (r.items || []).map(x => ({
+  return r.items.map(x => ({
     item: { type: r.type, subject: AI.params.subject, title: x.title, content: x.content, answer_mode: 'les_deux', share_model: true },
     key: { answers: {}, model_answer: x.model_answer || '' }
   }));
@@ -117,7 +233,6 @@ function aiPresets() {
 
 function showAiPreview() {
   const presets = aiPresets();
-  const r = AI.result;
   const cards = presets.map((p, i) => {
     const it = p.item;
     let body;
@@ -143,12 +258,12 @@ function showAiPreview() {
 
   Modal.open(`
     <div class="form">
-      <h2>✨ Proposition de l’IA</h2>
-      <p class="muted small">Relis avant d’ajouter : tu pourras tout modifier ensuite. ${AI.file ? `Le fichier « ${esc(AI.file.name)} » sera joint.` : ''}</p>
-      <div class="ai-results">${cards || '<p>Aucun résultat.</p>'}</div>
+      <h2>✨ Vérifie avant d’ajouter</h2>
+      <p class="muted small">Tu pourras tout modifier ensuite. ${AI.file ? `Le fichier « ${esc(AI.file.name)} » sera joint.` : ''}</p>
+      <div class="ai-results">${cards}</div>
       <div class="form-actions">
         <button type="button" class="btn ghost" data-action="open-ai">↺ Recommencer</button>
-        <button type="button" class="btn primary" data-action="ai-add">Ajouter ${r.type === 'quiz' ? 'le quiz' : 'la sélection'} à la semaine</button>
+        <button type="button" class="btn primary" data-action="ai-add">Ajouter ${AI.result.type === 'quiz' ? 'le quiz' : 'la sélection'} à la semaine</button>
       </div>
     </div>`, { wide: true });
 }
@@ -185,17 +300,67 @@ async function aiEdit(index) {
   } catch (ex) { showError(ex); }
 }
 
-async function aiProposeCorrection(btn) {
-  const form = $('#correction-form');
-  try {
-    const r = await busy(btn, 'L’IA corrige…', () => Api.ai({ mode: 'corriger', submission_id: T.copy.sub.id }));
-    const ta = form.elements.feedback;
-    if (ta.value.trim() && !confirm('Remplacer ta correction actuelle par celle proposée par l’IA ?')) {
-      ta.value += '\n\n' + r.feedback;
-    } else {
-      ta.value = r.feedback;
+/* ---------- Aide à la correction ---------- */
+
+function buildCorrectionPrompt() {
+  const { sub, item, key, student } = T.copy;
+  let t = `Je suis professeur particulier. Aide-moi à corriger le travail de mon élève (${student.level}, ${item.subject || 'matière non précisée'}).\n\n` +
+    `ÉNONCÉ « ${item.title} » :\n${item.content || '(voir document joint)'}\n\n`;
+  if (item.type === 'quiz') {
+    t += 'QUESTIONS ET RÉPONSES DE L’ÉLÈVE :\n';
+    (item.questions || []).forEach((q, i) => {
+      const k = key.answers?.[q.id];
+      t += `${i + 1}. ${q.prompt}\n   Réponse de l’élève : ${answerText(q, sub.answers?.[q.id])}\n   Bonne réponse : ${expectedText(q, k?.answer)}\n`;
+    });
+    if (sub.total) t += `Score : ${sub.score}/${sub.total}\n`;
+  } else {
+    t += `RÉPONSE ÉCRITE DE L’ÉLÈVE :\n${sub.answer || '(pas de réponse écrite)'}\n`;
+    if (sub.files?.length) t += `L’élève a aussi envoyé ${plural(sub.files.length, 'photo/fichier', 'photos/fichiers')} : je les joins.\n`;
+  }
+  if (key.model_answer) t += `\nMA CORRECTION TYPE :\n${key.model_answer}\n`;
+  t += `\nRédige une correction détaillée adressée directement à l’élève (tutoiement, ton bienveillant, adapté à son âge) : ` +
+    `ce qui est juste, chaque erreur expliquée avec la bonne démarche, puis un conseil pour progresser. ` +
+    `Termine par une proposition de note ou d’appréciation sur une ligne « Note : … ». ` +
+    `Écris en texte simple (pas de LaTeX) ; tu peux utiliser **gras**.`;
+  return t;
+}
+
+function openCorrectionHelper() {
+  const { sub } = T.copy;
+  const prompt = buildCorrectionPrompt();
+  const d = Modal.open(`
+    <form class="form" id="corr-ai-form">
+      <h2>✨ Corriger avec Claude ou ChatGPT</h2>
+      <div class="prompt-box">
+        <div class="prompt-head"><strong>① Demande à copier</strong>
+          <div class="actions"><button type="button" class="btn small primary" data-action="copy" data-text="${esc(prompt)}">📋 Copier</button>${AI_LINKS}</div></div>
+        <textarea rows="8" readonly>${esc(prompt)}</textarea>
+      </div>
+      ${sub.files?.length ? `<div class="field"><span>Photos / fichiers de l’élève à joindre dans l’IA</span>
+        <p class="hint">Ouvre chaque fichier et enregistre-le (ou fais une capture), puis ajoute-le à ta conversation avec l’IA.</p>
+        ${fileList(sub.files)}</div>` : ''}
+      <label class="field"><span>② Colle ici la correction proposée</span>
+        <textarea name="reply" rows="8" placeholder="Colle la réponse de l’IA…"></textarea></label>
+      <div class="form-actions">
+        <button type="button" class="btn ghost" data-action="close-modal">Annuler</button>
+        <button class="btn primary">Utiliser cette correction</button>
+      </div>
+    </form>`, { wide: true });
+  const form = $('#corr-ai-form', d);
+  form.onsubmit = e => {
+    e.preventDefault();
+    let text = form.elements.reply.value.trim();
+    if (!text) return;
+    const cform = $('#correction-form');
+    const m = text.match(/^\s*\**\s*Note\s*\**\s*:\s*\**\s*(.+?)\s*\**\s*$/im);
+    if (m && !cform.elements.grade.value) {
+      cform.elements.grade.value = m[1].replace(/\*+/g, '').trim().slice(0, 60);
+      text = text.replace(m[0], '').trim();
     }
-    if (!form.elements.grade.value) form.elements.grade.value = r.grade || '';
-    toast('Proposition insérée : relis et ajuste avant d’envoyer.');
-  } catch (ex) { showError(ex); }
+    const ta = cform.elements.feedback;
+    ta.value = ta.value.trim() ? ta.value.trim() + '\n\n' + text : text;
+    Modal.close();
+    ta.focus();
+    toast('Correction insérée : relis et ajuste avant d’envoyer.');
+  };
 }

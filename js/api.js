@@ -214,9 +214,6 @@ function createSupaApi(cfg) {
     },
     async removeFile(path) { await sb.storage.from('fichiers').remove([path]); },
 
-    /* --- IA --- */
-    async ai(body) { return callFn('ia', body); },
-
     /* --- Élève --- */
     async studentOverview() {
       const { data } = await sb.auth.getUser();
@@ -493,11 +490,6 @@ function createDemoApi() {
     async fileUrl(path) { return db.files[path] || null; },
     async removeFile(path) { delete db.files[path]; save(); },
 
-    async ai(body) {
-      tutorOnly();
-      await new Promise(r => setTimeout(r, 900));
-      return demoAi(body);
-    },
 
     async studentOverview() {
       load();
@@ -548,48 +540,6 @@ function createDemoApi() {
       if (it.share_model && k.model_answer) res.model_answer = k.model_answer;
       return res;
     }
-  };
-}
-
-/* ---------- IA simulée (mode démo) ---------- */
-
-function demoAi(body) {
-  const topic = body.topic || body.subject || 'la notion';
-  const n = Math.min(Math.max(Number(body.count) || 3, 1), 10);
-  const note = '\n\n(Exemple généré en mode démo : la vraie IA rédige un contenu adapté une fois Supabase configuré.)';
-  if (body.mode === 'corriger') {
-    return {
-      feedback: 'Bon travail dans l’ensemble ! ✅ Ta démarche est correcte et bien présentée.\n\n' +
-        '❌ Attention à la dernière étape : relis bien l’énoncé avant de conclure.\n\n' +
-        '💡 Conseil : écris chaque étape de calcul sur une ligne différente.' + note,
-      grade: '14/20'
-    };
-  }
-  if (body.type === 'quiz') {
-    return {
-      type: 'quiz',
-      quiz: {
-        title: `Quiz : ${topic}`,
-        intro: 'Réponds sans regarder ton cours !',
-        questions: Array.from({ length: n }, (_, i) => i % 3 === 0
-          ? { type: 'qcm', prompt: `Question ${i + 1} sur ${topic} (QCM)`, options: ['Réponse A', 'Réponse B', 'Réponse C'], correct_option: 1, answer_text: '', explanation: 'Explication de la bonne réponse.' }
-          : i % 3 === 1
-            ? { type: 'vf', prompt: `Affirmation ${i + 1} sur ${topic}`, options: ['Vrai', 'Faux'], correct_option: 0, answer_text: '', explanation: 'Explication.' }
-            : { type: 'texte', prompt: `Combien font ${i + 2} × 3 ?`, options: [], correct_option: -1, answer_text: String((i + 2) * 3), explanation: '' })
-      }
-    };
-  }
-  if (body.type === 'notion') {
-    return { type: 'notion', items: Array.from({ length: n }, (_, i) => ({ title: `${topic} — point ${i + 1}`, content: `Rappel de cours sur ${topic}.` + note })) };
-  }
-  return {
-    type: 'exercice',
-    items: Array.from({ length: n }, (_, i) => ({
-      title: `${topic} — exercice ${i + 1}`,
-      content: `Énoncé de l’exercice ${i + 1} sur ${topic} (${body.level || ''}, ${body.difficulty || 'moyen'}).` +
-        (body.file ? `\nBasé sur le fichier « ${body.file.name} ».` : '') + note,
-      model_answer: `Correction détaillée de l’exercice ${i + 1}.`
-    }))
   };
 }
 
