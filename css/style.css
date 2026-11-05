@@ -1175,3 +1175,15 @@ body.has-bottomnav #toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .bn-item:hover { color: var(--bg); }
 .bn-item.active { background: var(--feature); color: #fff; }
 .bn-badge { box-shadow: 0 0 0 2px var(--text) !important; }
+
+/* Personnage de l élève dans le header */
+.topnav .nav-user { padding: 3px 12px 3px 3px; background: var(--surface-2); font-weight: 600; font-size: .9rem; }
+.topnav .nav-user .mascot { --s: 32px !important; }
+.topnav .nav-user .icon { width: 26px; height: 26px; margin: 3px; color: var(--primary); }
+
+/* Confirmation de déconnexion */
+.logout-confirm { align-items: center; text-align: center; padding-top: 28px; }
+.logout-confirm h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; }
+.logout-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 320px; margin-top: 8px; }
+.logout-actions .btn { width: 100%; }
+dialog:has(.logout-confirm) { width: min(420px, calc(100% - 24px)); }

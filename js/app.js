@@ -116,7 +116,11 @@ async function renderTopbar() {
   const bottom = $('#bottomnav');
   const demo = Api.mode === 'demo' ? '<span class="pill">Démo</span>' : '';
   // Header épuré : logo à gauche, seulement l'installation et le mode démo à droite
-  nav.innerHTML = installButton() + demo;
+  const me = Session?.role === 'student' ? myMascot() : null;
+  const meBtn = Session?.role === 'student'
+    ? `<button class="nav-user" data-action="pick-mascot" title="Changer de personnage">${me ? mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 32 }) : icon('smile-plus')}<span>${esc(firstName(Session.student.name))}</span></button>`
+    : '';
+  nav.innerHTML = installButton() + demo + meBtn;
   if (!Session) { bottom.innerHTML = ''; bottom.hidden = true; document.body.classList.remove('has-bottomnav'); return; }
 
   const path = location.hash.slice(1).split('?')[0] || '/';
@@ -136,10 +140,8 @@ async function renderTopbar() {
     const weeks = S.data?.weeks || [];
     const current = weeks.find(isCurrentWeek) || weeks[0];
     const onWeek = path.startsWith('/semaine');
-    const me = myMascot();
     html = item('#/', icon('house'), 'Accueil', !onWeek)
       + (current ? item(`#/semaine/${current.id}`, icon('calendar-days'), 'Ma semaine', onWeek) : '')
-      + `<button class="bn-item bn-me" data-action="pick-mascot" aria-label="Mon personnage">${me ? mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 30 }) : icon('smile-plus')}<span class="bn-label">${esc(firstName(Session.student.name))}</span></button>`
       + logout;
   }
   bottom.innerHTML = html;
@@ -288,7 +290,22 @@ const Actions = {
       Session = s; location.hash = '#/'; route(true);
     } catch (ex) { err.classList.remove('ok'); err.textContent = ex.message; err.hidden = false; }
   },
-  'logout': async () => {
+  'logout': () => {
+    const who = Session?.role === 'student' ? (myMascot() || 'meh') : 'meh';
+    const name = Session?.role === 'student' ? firstName(Session.student.name) : '';
+    Modal.open(`
+      <div class="form logout-confirm">
+        ${mascot(who, { mood: 'sad', anim: 'pop', size: 96, label: 'Personnage triste' })}
+        <h2>Tu pars déjà${name ? ', ' + esc(name) : ''} ?</h2>
+        <p class="muted">Es-tu sûr de vouloir te déconnecter ? Il faudra ressaisir ${Session?.role === 'student' ? 'ton identifiant et ton code' : 'ton e-mail et ton mot de passe'} pour revenir.</p>
+        <div class="logout-actions">
+          <button type="button" class="btn primary" data-action="close-modal" autofocus>Non, je reste</button>
+          <button type="button" class="btn ghost danger" data-action="logout-confirm">${icon('log-out')} Me déconnecter</button>
+        </div>
+      </div>`);
+  },
+  'logout-confirm': async () => {
+    Modal.close();
     await Api.signOut();
     Session = null; lastPath = null;
     location.hash = '#/'; route(true);
