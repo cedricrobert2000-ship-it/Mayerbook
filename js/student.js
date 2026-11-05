@@ -135,32 +135,113 @@ async function viewStudentWeek(wid) {
     .map(async i => { S.solutions[i.id] = await Api.getSolution(i.id); }));
   markSeen(items.filter(i => S.subs[i.id]?.status === 'corrige').map(i => S.subs[i.id].id));
 
-  return studentWeekHtml(week, items);
+  // Ordre des slides : notions, puis exercices, puis quiz
+  const ordered = TYPE_ORDER.flatMap(t => items.filter(i => i.type === t));
+  // Lien direct vers un élément (?item=…), sinon la première étape pas encore faite
+  const wanted = new URLSearchParams(location.hash.split('?')[1] || '').get('item');
+  let idx = ordered.findIndex(i => i.id === wanted);
+  if (idx < 0) idx = S.slide?.[wid] ?? ordered.findIndex(i => !isItemDone(i, S.subs[i.id]));
+  S.slide = { ...(S.slide || {}), [wid]: Math.max(0, Math.min(idx < 0 ? 0 : idx, ordered.length - 1)) };
+  return studentWeekHtml(week, ordered);
 }
 
 function studentWeekHtml(week, items) {
   const p = progressOf(items, S.subs);
-  const sections = TYPE_ORDER.map(type => {
-    const list = items.filter(i => i.type === type);
-    if (!list.length) return '';
-    return `<section class="item-section"><h2>${icon(TYPES[type].icon)} ${TYPES[type].plural}</h2>
-      ${list.map(it => studentItem(it)).join('')}</section>`;
-  }).join('');
+  const cur = S.slide?.[week.id] || 0;
+  const slides = items.map((it, i) => `
+    <div class="slide" data-i="${i}" ${i === cur ? '' : 'hidden'}>
+      <div class="slide-type type-${it.type}"><span class="type-chip">${icon(TYPES[it.type].icon)} ${TYPES[it.type].label}</span>
+        <span class="muted small">Étape ${i + 1} sur ${items.length}</span></div>
+      ${studentItem(it)}
+    </div>`).join('');
   return `
     <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mon suivi</a></nav>
-    <div class="hero card has-mascot">
+    <div class="hero card has-mascot compact">
       <div class="card-mascot">${faceForProgress(p, 150, 11)}</div>
       <p class="muted">${esc(weekLabel(week))}</p>
       <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
       ${week.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(week.message)}</div>` : ''}
-      <div class="hero-progress">
-        <div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>
-        ${progressBar(p)}
-        ${p.total && p.done === p.total ? '<p class="cheer">Bravo, tu as tout terminé !</p>' : ''}
-      </div>
+      <div class="hero-progress">${heroProgress(p)}</div>
     </div>
-    ${sections || '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
+    ${items.length ? `
+      <section class="deck" data-week="${week.id}" aria-roledescription="carrousel" aria-label="Travail de la semaine">
+        <div class="deck-dots" role="tablist">${deckDots(items, cur)}</div>
+        <div class="deck-track">${slides}</div>
+        <div class="deck-nav">
+          <button class="btn" data-action="slide" data-dir="-1" ${cur === 0 ? 'disabled' : ''}>${icon('chevron-left')} Précédent</button>
+          <span class="deck-count">${cur + 1} / ${items.length}</span>
+          <button class="btn primary" data-action="slide" data-dir="1" ${cur === items.length - 1 ? 'disabled' : ''}>Suivant ${icon('chevron-right')}</button>
+        </div>
+      </section>`
+      : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
 }
+
+function heroProgress(p) {
+  return `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p)}
+    ${p.total && p.done === p.total ? '<p class="cheer">Bravo, tu as tout terminé !</p>' : ''}`;
+}
+
+function deckDots(items, cur) {
+  return items.map((it, i) => `<button class="deck-dot type-${it.type} ${i === cur ? 'active' : ''} ${isItemDone(it, S.subs[it.id]) ? 'done' : ''}"
+    role="tab" aria-selected="${i === cur}" aria-label="Étape ${i + 1} : ${esc(it.title)}" data-action="slide-to" data-i="${i}">${isItemDone(it, S.subs[it.id]) ? icon('check') : i + 1}</button>`).join('');
+}
+
+/** Affiche la slide n° i de la semaine en cours. */
+function goSlide(i) {
+  const deck = $('.deck');
+  if (!deck) return;
+  const slides = $$('.slide', deck);
+  const n = slides.length;
+  const prev = S.slide[deck.dataset.week] || 0;
+  i = Math.max(0, Math.min(i, n - 1));
+  if (i === prev && !slides[i].hidden) return;
+  S.slide[deck.dataset.week] = i;
+  slides.forEach((el, k) => {
+    el.hidden = k !== i;
+    el.classList.remove('from-left', 'from-right');
+    if (k === i) el.classList.add(i > prev ? 'from-right' : 'from-left');
+  });
+  $$('.deck-dot', deck).forEach((d, k) => { d.classList.toggle('active', k === i); d.setAttribute('aria-selected', k === i); });
+  $('.deck-count', deck).textContent = `${i + 1} / ${n}`;
+  const [btnPrev, btnNext] = $$('.deck-nav .btn', deck);
+  btnPrev.disabled = i === 0;
+  btnNext.disabled = i === n - 1;
+  const top = deck.getBoundingClientRect().top + window.scrollY - 80;
+  if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
+}
+
+function refreshDeck() {
+  const deck = $('.deck');
+  if (!deck) return;
+  const items = S.data.items.filter(i => i.week_id === deck.dataset.week);
+  const ordered = TYPE_ORDER.flatMap(t => items.filter(i => i.type === t));
+  $('.deck-dots', deck).innerHTML = deckDots(ordered, S.slide[deck.dataset.week] || 0);
+}
+
+// Balayage du doigt sur téléphone
+(() => {
+  let x0 = null, y0 = null;
+  document.addEventListener('touchstart', e => {
+    if (!e.target.closest('.deck-track') || e.target.closest('input, textarea, select')) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const deck = $('.deck');
+      if (deck) goSlide((S.slide[deck.dataset.week] || 0) + (dx < 0 ? 1 : -1));
+    }
+  }, { passive: true });
+  // Flèches du clavier (hors saisie)
+  document.addEventListener('keydown', e => {
+    const deck = $('.deck');
+    if (!deck || e.target.closest('input, textarea, select, [contenteditable]') || $('#modal').open) return;
+    if (e.key === 'ArrowRight') goSlide((S.slide[deck.dataset.week] || 0) + 1);
+    if (e.key === 'ArrowLeft') goSlide((S.slide[deck.dataset.week] || 0) - 1);
+  });
+})();
 
 function statusBanner(it, sub) {
   if (!sub || sub.status === 'brouillon') {
@@ -313,8 +394,8 @@ async function refreshStudentItem(iid) {
   const items = S.data.items.filter(i => i.week_id === week.id);
   const p = progressOf(items, S.subs);
   const hp = $('.hero-progress');
-  if (hp) hp.innerHTML = `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p)}
-    ${p.total && p.done === p.total ? '<p class="cheer">' + icon('party-popper') + ' Bravo, tu as tout terminé !</p>' : ''}`;
+  if (hp) hp.innerHTML = heroProgress(p);
+  refreshDeck();
 }
 
 async function studentSave(iid, patch, { redraw = true } = {}) {

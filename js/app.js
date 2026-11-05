@@ -113,23 +113,38 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 
 async function renderTopbar() {
   const nav = $('#topnav');
-  if (!Session) { nav.innerHTML = installButton() + (Api.mode === 'demo' ? '<span class="pill">Mode démo</span>' : ''); return; }
+  const bottom = $('#bottomnav');
+  const demo = Api.mode === 'demo' ? '<span class="pill">Démo</span>' : '';
+  // Header épuré : logo à gauche, seulement l'installation et le mode démo à droite
+  nav.innerHTML = installButton() + demo;
+  if (!Session) { bottom.innerHTML = ''; bottom.hidden = true; document.body.classList.remove('has-bottomnav'); return; }
+
+  const path = location.hash.slice(1).split('?')[0] || '/';
+  const item = (href, ico, label, active, extra = '') =>
+    `<a href="${href}" class="bn-item ${active ? 'active' : ''}" aria-label="${label}" ${active ? 'aria-current="page"' : ''}>${ico}<span class="bn-label">${label}</span>${extra}</a>`;
+  const logout = `<button class="bn-item" data-action="logout" aria-label="Déconnexion">${icon('log-out')}<span class="bn-label">Quitter</span></button>`;
+
+  let html;
   if (Session.role === 'tutor') {
     let n = 0;
     try { n = (await Api.listToCorrect()).length; } catch { /* ignore */ }
-    nav.innerHTML = `
-      ${installButton()}
-      ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
-      <a href="#/" class="nav-link">Élèves</a>
-      <a href="#/corrections" class="nav-link">À corriger${n ? ` <span class="count-badge">${n}</span>` : ''}</a>
-      <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
+    const onCorr = path.startsWith('/corrections') || path.startsWith('/copie');
+    html = item('#/', icon('users'), 'Élèves', !onCorr)
+      + item('#/corrections', icon('clipboard-pen-line'), 'À corriger', onCorr, n ? `<span class="bn-badge">${n}</span>` : '')
+      + logout;
   } else {
-    nav.innerHTML = `
-      ${installButton()}
-      ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
-      <button class="nav-user" data-action="pick-mascot" title="Changer de personnage">${myMascot() ? mascot(myMascot(), { mood: myMascot() === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 30 }) : avatar(Session.student.name, 'sm')} ${esc(firstName(Session.student.name))}</button>
-      <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
+    const weeks = S.data?.weeks || [];
+    const current = weeks.find(isCurrentWeek) || weeks[0];
+    const onWeek = path.startsWith('/semaine');
+    const me = myMascot();
+    html = item('#/', icon('house'), 'Accueil', !onWeek)
+      + (current ? item(`#/semaine/${current.id}`, icon('calendar-days'), 'Ma semaine', onWeek) : '')
+      + `<button class="bn-item bn-me" data-action="pick-mascot" aria-label="Mon personnage">${me ? mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 30 }) : icon('smile-plus')}<span class="bn-label">${esc(firstName(Session.student.name))}</span></button>`
+      + logout;
   }
+  bottom.innerHTML = html;
+  bottom.hidden = false;
+  document.body.classList.add('has-bottomnav');
 }
 
 /* ---------- Navigation ---------- */
@@ -195,6 +210,8 @@ const Actions = {
   'close-modal-go': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); },
   'copy': d => copyText(d.text),
   'pick-mascot': () => openMascotPicker(false),
+  'slide': d => { const deck = $('.deck'); if (deck) goSlide((S.slide[deck.dataset.week] || 0) + Number(d.dir)); },
+  'slide-to': d => goSlide(Number(d.i)),
   'install-app': async () => {
     if (installPrompt) {
       installPrompt.prompt();

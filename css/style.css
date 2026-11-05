@@ -775,8 +775,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 
 /* Cartes colorées : fond pastel plein, texte foncé, en clair comme en sombre.
    On redéfinit les couleurs « locales » pour que tout le contenu reste lisible. */
-.item-card, .s-item, .stat-row .card, .current-week, .hero.card,
-.new-corrections, .ai-card, .publish-card.is-published {
+.current-week, .hero.card {
   background: var(--card) !important;
   color: var(--ink);
   --text: #141216;
@@ -810,26 +809,10 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 
 /* Autres cartes de couleur */
 .new-corrections { --card: var(--c-orange); }
-.new-corrections .corr-link { background: rgb(255 255 255 / .6); color: var(--ink); }
 .ai-card { --card: var(--c-lilac); }
 .publish-card.is-published { --card: var(--c-lime); }
 
 /* Éléments dans les cartes colorées */
-.item-card .tag, .s-item .tag { background: rgb(255 255 255 / .7); color: var(--ink); }
-.s-item .toggle { border-color: rgb(20 18 22 / .3); color: var(--ink); }
-.s-item .toggle.on { background: var(--ink); border-color: var(--ink); color: #fff; }
-.s-item .choice { background: rgb(255 255 255 / .75); border-color: transparent; }
-.s-item .choice.picked { border-color: var(--ink); }
-.s-item .choice.right { background: #e3ffd6; border-color: #2f9e44; }
-.s-item .choice.wrong { border-color: #d6336c; }
-.s-item .quiz-q { background: rgb(255 255 255 / .45); }
-.s-item .quiz-q.ok { background: #e3ffd6; }
-.s-item .quiz-q.ko { background: #ffe1e8; }
-.s-item .qnum { background: var(--ink); color: #fff; }
-.s-item .sent-box, .s-item .feedback-box { background: rgb(255 255 255 / .6); border: 0; }
-.s-item details.correction { background: rgb(255 255 255 / .6); border: 0; }
-.s-item details.correction summary, .s-item .resource { color: var(--ink); }
-.item-card .status, .s-item .status { background: rgb(255 255 255 / .7); }
 
 /* Étiquettes de matière : pastels vifs (identiques en clair et en sombre) */
 .tag[data-s="maths"]    { --tag-bg: var(--c-sky);    --tag-fg: #141216; }
@@ -1033,3 +1016,107 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
   .current-week .card-mascot .m-face, .hero.card .card-mascot .m-face { --s: calc(var(--fs) * .8) !important; }
   .stat-mascot .m-face { --s: calc(var(--fs) * .9) !important; }
 }
+
+
+/* =========================================================
+   v4 — Moins de surcharge : cartes neutres, couleur = sens
+   ========================================================= */
+.item-card, .s-item, .stat-row .card, .new-corrections, .ai-card, .publish-card.is-published {
+  background: var(--surface) !important;
+}
+.s-item.is-done { background: var(--surface) !important; }
+.s-item .choice { background: var(--bg); border-color: var(--border); }
+.s-item .choice.picked { border-color: var(--primary); }
+.s-item .quiz-q { background: var(--surface-2); }
+.s-item .quiz-q.ok { background: var(--ok-soft); }
+.s-item .quiz-q.ko { background: var(--ko-soft); }
+.s-item .qnum { background: var(--text); color: var(--bg); }
+.s-item .toggle.on { background: var(--ok); border-color: var(--ok); color: #fff; }
+.new-corrections .corr-link { background: var(--bg); color: var(--text); }
+.publish-card.is-published h3 .icon { color: var(--ok); }
+.ai-card h3 .icon { color: var(--primary); }
+.stat-mascot .m-face { color: var(--text); }
+.m-face svg path, .m-face svg circle, .m-face svg ellipse { --face: var(--text); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .m-face svg [stroke="#111"] { stroke: #ecebef; }
+  :root:not([data-theme="light"]) .m-face svg [fill="#111"] { fill: #ecebef; }
+  :root:not([data-theme="light"]) .current-week .m-face svg [stroke="#111"], :root:not([data-theme="light"]) .hero.card .m-face svg [stroke="#111"] { stroke: #111; }
+  :root:not([data-theme="light"]) .current-week .m-face svg [fill="#111"], :root:not([data-theme="light"]) .hero.card .m-face svg [fill="#111"] { fill: #111; }
+}
+
+/* Pastille de type : la seule touche de couleur des cartes de travail */
+.type-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+  font-weight: 600; font-size: .85rem; color: var(--ink); background: var(--chip);
+}
+.type-notion   { --chip: var(--c-yellow); }
+.type-exercice { --chip: var(--c-lilac); }
+.type-quiz     { --chip: var(--c-sky); }
+
+/* =========================================================
+   Slides (travail de la semaine, côté élève)
+   ========================================================= */
+.hero.card.compact h1 { font-size: 1.6rem; }
+.deck { margin-top: 8px; }
+.deck-dots { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 4px 0 14px; }
+.deck-dot {
+  width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--chip); background: transparent;
+  color: var(--text); font: 600 .85rem/1 var(--font-body); display: grid; place-items: center; cursor: pointer;
+  transition: transform .15s, background .15s;
+}
+.deck-dot .icon { width: 16px; height: 16px; }
+.deck-dot.done { background: var(--chip); color: var(--ink); }
+.deck-dot.active { background: var(--text); border-color: var(--text); color: var(--bg); transform: scale(1.12); }
+.slide-type { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.slide .s-item { margin-bottom: 0; }
+.slide.from-right { animation: slide-in-right .32s cubic-bezier(.2,.8,.3,1); }
+.slide.from-left  { animation: slide-in-left .32s cubic-bezier(.2,.8,.3,1); }
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes slide-in-left  { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .slide.from-right, .slide.from-left { animation: none; } }
+.deck-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.deck-count { font-weight: 600; color: var(--muted); font-size: .9rem; }
+.deck-nav .btn:disabled { visibility: hidden; }
+
+/* =========================================================
+   Header épuré + barre de navigation en pilule
+   ========================================================= */
+.topbar { border-bottom: 0; background: color-mix(in srgb, var(--bg) 85%, transparent); }
+.topnav .pill { font-size: .75rem; }
+.install-btn { padding: 6px 12px !important; }
+
+.bottomnav {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 6px));
+  z-index: 30; display: flex; gap: 4px; padding: 6px;
+  background: var(--text); border-radius: 999px;
+}
+.bottomnav[hidden] { display: none; }
+.bn-item {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 50px; min-width: 50px; padding: 0 14px; border-radius: 999px; border: 0; background: none;
+  color: color-mix(in srgb, var(--bg) 72%, transparent); font: 600 .9rem/1 var(--font-body);
+  text-decoration: none; cursor: pointer; transition: background .2s, color .2s;
+}
+.bn-item .icon { width: 22px; height: 22px; }
+.bn-item:hover { color: var(--bg); }
+.bn-item .bn-label { display: none; white-space: nowrap; }
+.bn-item.active { background: var(--bg); color: var(--text); padding: 0 18px; }
+.bn-item.active .bn-label { display: inline; }
+.bn-me .mascot { --s: 30px !important; }
+.bn-badge {
+  position: absolute; top: 5px; right: 5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: var(--ko); color: #fff; font-size: .7rem; font-weight: 700; display: grid; place-items: center;
+}
+.bn-item.active .bn-badge { position: static; }
+body.has-bottomnav .container { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+body.has-bottomnav #toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
+@media (min-width: 900px) {
+  .bn-item .bn-label { display: inline; }
+  .bn-item { padding: 0 18px; }
+}
+
+/* Texte des cartes de travail : couleur du thème (lisible en clair et en sombre) */
+.item-card h4, .s-item h3, .s-item .content { color: var(--text); }
+.s-item .choice.right { border-color: var(--ok); background: var(--ok-soft); }
+.s-item .choice.wrong { border-color: var(--ko); }
