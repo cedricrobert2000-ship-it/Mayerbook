@@ -156,21 +156,22 @@ function mascotFace(mood = 'happy', o = {}) {
   const [eyes, mouth] = MOODS[mood] || MOODS.happy;
   const blink = OPEN_EYES.includes(eyes) ? ' blink' : '';
   const delay = ((mascotSeq++ * 0.37) % 2.4).toFixed(2);
-  return `<span class="m-face mascot m-${o.anim || 'bob'}" style="--s:${o.size || 150}px;--d:${delay}s" aria-hidden="true">` +
+  const size = o.size || 150;
+  return `<span class="m-face mascot m-${o.anim || 'bob'}" style="--s:${size}px;--fs:${size}px;--r:${o.rotate || 0}deg;--d:${delay}s" aria-hidden="true">` +
     `<svg viewBox="0 0 200 200" focusable="false"><g class="m-all"><g class="m-eyes${blink}">${mEyes(eyes, FACE)}</g>` +
     `<g class="m-mouth">${mMouth(mouth, FACE)}</g></g></svg></span>`;
 }
 
-function faceForProgress(p, size) {
-  if (!p.total || p.done === 0) return mascotFace('sleep', { size, anim: 'sleep' });
-  if (p.done === p.total) return mascotFace('happy', { size, anim: 'bounce' });
-  return mascotFace(p.pct >= 50 ? 'calm' : 'wink', { size });
+function faceForProgress(p, size, rotate = 0) {
+  if (!p.total || p.done === 0) return mascotFace('sleep', { size, rotate, anim: 'sleep' });
+  if (p.done === p.total) return mascotFace('happy', { size, rotate, anim: 'bounce' });
+  return mascotFace(p.pct >= 50 ? 'calm' : 'wink', { size, rotate });
 }
 
-function faceForScore(ratio, size) {
-  if (ratio >= 0.8) return mascotFace('proud', { size });
-  if (ratio >= 0.5) return mascotFace('wink', { size });
-  return mascotFace('worried', { size });
+function faceForScore(ratio, size, rotate = 0) {
+  if (ratio >= 0.8) return mascotFace('proud', { size, rotate });
+  if (ratio >= 0.5) return mascotFace('wink', { size, rotate });
+  return mascotFace('worried', { size, rotate });
 }
 
 /* ---------- Personnage choisi par l'élève ---------- */

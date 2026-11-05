@@ -56,7 +56,7 @@ async function viewStudentHome() {
     const todo = its.filter(i => !isItemDone(i, S.subs[i.id]));
     currentCard = `
       <a class="card current-week has-mascot" href="#/semaine/${current.id}">
-        <div class="card-mascot">${faceForProgress(p, 170)}</div>
+        <div class="card-mascot">${faceForProgress(p, 176, -14)}</div>
         <p class="muted small">${isCurrentWeek(current) ? 'Cette semaine' : 'Dernière semaine'} · ${esc(weekLabel(current))}</p>
         <h2>${current.title ? esc(current.title) : 'Mon travail de la semaine'}</h2>
         ${current.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(current.message)}</div>` : ''}
@@ -86,9 +86,9 @@ async function viewStudentHome() {
     ${items.length ? `
       <h2 class="section-title">${icon('trending-up')} Mon suivi</h2>
       <div class="stat-row">
-        <div class="card stat"><span class="stat-mascot">${mascotFace(exDone ? 'happy' : 'meh', { size: 92 })}</span><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
-        <div class="card stat"><span class="stat-mascot">${qAvg === null ? mascotFace('sleep', { size: 92, anim: 'sleep' }) : faceForScore(qAvg / 100, 92)}</span><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
-        <div class="card stat"><span class="stat-mascot">${mascotFace(corrected.length ? 'wow' : 'calm', { size: 92 })}</span><span class="stat-num">${corrected.length}</span><span class="muted small">corrections reçues</span></div>
+        <div class="card stat"><span class="stat-mascot">${mascotFace(exDone ? 'happy' : 'meh', { size: 84, rotate: 16 })}</span><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
+        <div class="card stat"><span class="stat-mascot">${qAvg === null ? mascotFace('sleep', { size: 112, rotate: -12, anim: 'sleep' }) : faceForScore(qAvg / 100, 112, -12)}</span><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
+        <div class="card stat"><span class="stat-mascot">${mascotFace(corrected.length ? 'wow' : 'calm', { size: 98, rotate: 7 })}</span><span class="stat-num">${corrected.length}</span><span class="muted small">corrections reçues</span></div>
       </div>
       <div class="card">
         <h3>Par matière</h3>
@@ -149,7 +149,7 @@ function studentWeekHtml(week, items) {
   return `
     <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mon suivi</a></nav>
     <div class="hero card has-mascot">
-      <div class="card-mascot">${faceForProgress(p, 170)}</div>
+      <div class="card-mascot">${faceForProgress(p, 150, 11)}</div>
       <p class="muted">${esc(weekLabel(week))}</p>
       <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
       ${week.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(week.message)}</div>` : ''}

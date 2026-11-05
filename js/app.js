@@ -16,7 +16,7 @@ function viewLogin(tab = 'eleve') {
     <div class="login">
       <div class="login-brand">
         <div class="login-crew">${mascotCrew()}</div>
-        <h1>Mayerbook</h1>
+        <h1 class="login-title"><img src="icons/logo.svg" alt="" width="52" height="52">Mayerbook</h1>
         <p class="muted">Le suivi de tes cours particuliers, semaine après semaine.</p>
       </div>
 

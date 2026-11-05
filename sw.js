@@ -5,7 +5,7 @@
  * possible, la copie en cache seulement hors connexion.
  * Les appels à Supabase ne sont jamais mis en cache.
  */
-const CACHE = 'mayerbook-v2';
+const CACHE = 'mayerbook-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', event => {

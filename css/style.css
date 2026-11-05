@@ -1016,3 +1016,20 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
   .hero.card.has-mascot { padding-bottom: 86px; }
   .hero.card .card-mascot { bottom: -30px; right: -22px; }
 }
+
+/* ---------- Logo ---------- */
+.brand { gap: 10px; }
+.brand-logo { width: 32px; height: 32px; flex: none; display: block; }
+.login-title { display: inline-flex; align-items: center; gap: 12px; }
+.login-title img { width: 52px; height: 52px; transform: rotate(-6deg); }
+
+/* ---------- Visages : chacun sa taille et son inclinaison ---------- */
+.m-face { rotate: var(--r, 0deg); }
+.card-mascot .m-face, .stat-mascot .m-face { --s: var(--fs) !important; }
+.stat:nth-child(1) .stat-mascot { right: -14px; bottom: -22px; }
+.stat:nth-child(2) .stat-mascot { right: -26px; bottom: -36px; }
+.stat:nth-child(3) .stat-mascot { right: -18px; bottom: -28px; }
+@media (max-width: 560px) {
+  .current-week .card-mascot .m-face, .hero.card .card-mascot .m-face { --s: calc(var(--fs) * .8) !important; }
+  .stat-mascot .m-face { --s: calc(var(--fs) * .9) !important; }
+}
