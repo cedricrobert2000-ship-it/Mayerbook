@@ -17,9 +17,9 @@ const SUBJECT_HUES = {
 };
 
 const TYPES = {
-  notion:   { label: 'Notion à revoir', plural: 'Notions à revoir', icon: '💡', un: 'une notion' },
-  exercice: { label: 'Exercice',        plural: 'Exercices',        icon: '✏️', un: 'un exercice' },
-  quiz:     { label: 'Quiz',            plural: 'Quiz',             icon: '❓', un: 'un quiz' }
+  notion:   { label: 'Notion à revoir', plural: 'Notions à revoir', icon: 'lightbulb', un: 'une notion' },
+  exercice: { label: 'Exercice',        plural: 'Exercices',        icon: 'pencil', un: 'un exercice' },
+  quiz:     { label: 'Quiz',            plural: 'Quiz',             icon: 'circle-help', un: 'un quiz' }
 };
 const TYPE_ORDER = ['notion', 'exercice', 'quiz'];
 
@@ -201,9 +201,9 @@ function fmtDateTime(ts) {
 
 function fileIcon(f) {
   const t = f.type || '';
-  if (t.startsWith('image/')) return '🖼️';
-  if (t === 'application/pdf') return '📄';
-  return '📎';
+  if (t.startsWith('image/')) return icon('image');
+  if (t === 'application/pdf') return icon('file-text');
+  return icon('paperclip');
 }
 function fmtSize(n) {
   if (!n) return '';
@@ -227,7 +227,7 @@ function fileList(files, { removable = false, dataAttr = '' } = {}) {
       <a class="file" data-file-path="${esc(f.path)}" href="#" target="_blank" rel="noopener">
         <span>${fileIcon(f)}</span><span class="file-name">${esc(f.name)}</span><span class="muted tiny">${fmtSize(f.size)}</span>
       </a>
-      ${removable ? `<button type="button" class="icon-btn danger" title="Retirer" data-action="remove-file" data-index="${i}" ${dataAttr}>✕</button>` : ''}
+      ${removable ? `<button type="button" class="icon-btn danger" title="Retirer" data-action="remove-file" data-index="${i}" ${dataAttr}>${icon('x')}</button>` : ''}
     </li>`).join('')}</ul>`;
 }
 
@@ -265,7 +265,7 @@ function toast(msg) {
 
 function showError(e) {
   console.error(e);
-  toast('⚠️ ' + (e?.message || 'Une erreur est survenue'));
+  toast(e?.message || 'Une erreur est survenue');
 }
 
 const Modal = {
@@ -312,7 +312,7 @@ async function copyText(text) {
     try { document.execCommand('copy'); } catch { /* ignore */ }
     ta.remove();
   }
-  toast('Copié ✓');
+  toast('Copié');
 }
 
 function downloadFile(filename, content, type = 'application/json') {

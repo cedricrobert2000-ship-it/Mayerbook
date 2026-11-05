@@ -61,29 +61,29 @@ async function viewStudentHome() {
         ${current.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(current.message)}</div>` : ''}
         <div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>
         ${progressBar(p)}
-        ${todo.length ? `<ul class="todo">${todo.slice(0, 5).map(i => `<li>${TYPES[i.type].icon} ${esc(i.title)}</li>`).join('')}${todo.length > 5 ? `<li class="muted">… et ${todo.length - 5} autre(s)</li>` : ''}</ul>`
-          : '<p class="cheer">🎉 Tout est fait cette semaine, bravo !</p>'}
-        <span class="cta">${p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">→</span></span>
+        ${todo.length ? `<ul class="todo">${todo.slice(0, 5).map(i => `<li>${icon(TYPES[i.type].icon)} ${esc(i.title)}</li>`).join('')}${todo.length > 5 ? `<li class="muted">… et ${todo.length - 5} autre(s)</li>` : ''}</ul>`
+          : '<p class="cheer">' + icon('party-popper') + ' Tout est fait cette semaine, bravo !</p>'}
+        <span class="cta">${p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">${icon('arrow-right')}</span></span>
       </a>`;
   }
 
   return `
     <div class="hero">
-      <h1>Bonjour ${esc(firstName(student.name))} 👋</h1>
+      <h1>Bonjour ${esc(firstName(student.name))} ${icon('hand', 'wave')}</h1>
       <p class="muted">${esc(student.level)} · ${(student.subjects || []).map(subjectTag).join(' ')}</p>
     </div>
 
     ${fresh.length ? `
       <div class="card new-corrections">
-        <h3>📬 ${fresh.length === 1 ? 'Nouvelle correction' : `${fresh.length} nouvelles corrections`}</h3>
-        ${fresh.map(i => `<a class="corr-link" href="#/semaine/${i.week_id}?item=${i.id}">${TYPES[i.type].icon} ${esc(i.title)}
+        <h3>${icon('mail-check')} ${fresh.length === 1 ? 'Nouvelle correction' : `${fresh.length} nouvelles corrections`}</h3>
+        ${fresh.map(i => `<a class="corr-link" href="#/semaine/${i.week_id}?item=${i.id}">${icon(TYPES[i.type].icon)} ${esc(i.title)}
           ${S.subs[i.id].grade ? `<span class="status ok">${esc(S.subs[i.id].grade)}</span>` : i.type === 'quiz' ? `<span class="status ok">${S.subs[i.id].score}/${S.subs[i.id].total}</span>` : ''}</a>`).join('')}
       </div>` : ''}
 
-    ${currentCard || '<div class="empty card"><div class="empty-icon">📭</div><p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>'}
+    ${currentCard || '<div class="empty card"><div class="empty-icon">' + icon('inbox') + '</div><p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>'}
 
     ${items.length ? `
-      <h2 class="section-title">📈 Mon suivi</h2>
+      <h2 class="section-title">${icon('trending-up')} Mon suivi</h2>
       <div class="stat-row">
         <div class="card stat"><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
         <div class="card stat"><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
@@ -100,7 +100,7 @@ async function viewStudentHome() {
       </div>` : ''}
 
     ${weeks.length > 1 ? `
-      <h2 class="section-title">🗓️ Toutes mes semaines</h2>
+      <h2 class="section-title">${icon('calendar-days')} Toutes mes semaines</h2>
       ${weeks.map(w => {
         const its = itemsBy[w.id] || [];
         const p = progressOf(its, S.subs);
@@ -142,11 +142,11 @@ function studentWeekHtml(week, items) {
   const sections = TYPE_ORDER.map(type => {
     const list = items.filter(i => i.type === type);
     if (!list.length) return '';
-    return `<section class="item-section"><h2>${TYPES[type].icon} ${TYPES[type].plural}</h2>
+    return `<section class="item-section"><h2>${icon(TYPES[type].icon)} ${TYPES[type].plural}</h2>
       ${list.map(it => studentItem(it)).join('')}</section>`;
   }).join('');
   return `
-    <nav class="crumbs"><a href="#/">← Mon suivi</a></nav>
+    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mon suivi</a></nav>
     <div class="hero card">
       <p class="muted">${esc(weekLabel(week))}</p>
       <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
@@ -154,20 +154,20 @@ function studentWeekHtml(week, items) {
       <div class="hero-progress">
         <div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>
         ${progressBar(p)}
-        ${p.total && p.done === p.total ? '<p class="cheer">🎉 Bravo, tu as tout terminé !</p>' : ''}
+        ${p.total && p.done === p.total ? '<p class="cheer">' + icon('party-popper') + ' Bravo, tu as tout terminé !</p>' : ''}
       </div>
     </div>
-    ${sections || '<div class="empty card"><p>Rien à faire cette semaine 😄</p></div>'}`;
+    ${sections || '<div class="empty card"><p>Rien à faire cette semaine ' + icon('smile') + '</p></div>'}`;
 }
 
 function statusBanner(it, sub) {
   if (!sub || sub.status === 'brouillon') {
-    if (sub?.feedback) return `<div class="feedback-box warn"><strong>↩︎ Ton prof te demande de refaire ce travail :</strong><div>${rich(sub.feedback)}</div></div>`;
+    if (sub?.feedback) return `<div class="feedback-box warn"><strong>${icon('undo-2')} Ton prof te demande de refaire ce travail :</strong><div>${rich(sub.feedback)}</div></div>`;
     return '';
   }
   if (sub.status === 'envoye') {
     const sol = S.solutions[it.id] || {};
-    return `<div class="sent-box">📨 Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
+    return `<div class="sent-box">${icon('send')} Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
       (sol.model_answer ? 'Compare ta réponse avec la correction ci-dessous : ton prof va aussi corriger <strong>ta</strong> copie.'
         : '<strong>En attente de correction</strong> par ton prof.') + '</div>';
   }
@@ -181,11 +181,11 @@ function correctionBlock(it, sub) {
   const hasFeedback = corrected && (sub.feedback || sub.grade || sub.feedback_files?.length);
   return `
     ${hasFeedback ? `<div class="feedback-box">
-      <div class="feedback-head"><strong>✅ Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
+      <div class="feedback-head"><strong>${icon('circle-check')} Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
       ${sub.feedback ? `<div class="content">${rich(sub.feedback)}</div>` : ''}
       ${imagePreviews(sub.feedback_files)}${fileList(sub.feedback_files)}
     </div>` : ''}
-    ${sol.model_answer ? `<details class="correction" ${corrected ? '' : 'open'}><summary>📘 Correction détaillée</summary><div class="content">${rich(sol.model_answer)}</div></details>` : ''}`;
+    ${sol.model_answer ? `<details class="correction" ${corrected ? '' : 'open'}><summary>${icon('book-open')} Correction détaillée</summary><div class="content">${rich(sol.model_answer)}</div></details>` : ''}`;
 }
 
 function studentItem(it) {
@@ -198,8 +198,8 @@ function studentItem(it) {
         <h3>${esc(it.title)}</h3>
         ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}
         ${fileList(it.attachments)}
-        ${it.link ? `<p><a class="resource" href="${esc(it.link)}" target="_blank" rel="noopener">🔗 Ressource pour revoir la notion</a></p>` : ''}
-        <button class="toggle ${ok ? 'on' : ''}" data-action="st-understood" data-iid="${it.id}">${ok ? '✓ J’ai compris' : 'J’ai compris cette notion'}</button>
+        ${it.link ? `<p><a class="resource" href="${esc(it.link)}" target="_blank" rel="noopener">${icon('link')} Ressource pour revoir la notion</a></p>` : ''}
+        <button class="toggle ${ok ? 'on' : ''}" data-action="st-understood" data-iid="${it.id}">${ok ? icon('check') + ' J’ai compris' : 'J’ai compris cette notion'}</button>
       </article>`;
   }
   if (it.type === 'exercice') return studentExercise(it, sub);
@@ -228,8 +228,8 @@ function studentExercise(it, sub) {
         ${mode !== 'texte' ? `
           ${imagePreviews(files)}
           ${draft ? fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` }) : fileList(files)}
-          ${draft ? `<label class="btn file-btn">📷 Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
-        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">📨 Envoyer à mon prof</button>
+          ${draft ? `<label class="btn file-btn">${icon('camera')} Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
+        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer à mon prof</button>
           <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. ${it.share_model && it.instant_result
             ? 'Tu verras la correction juste après l’envoi.' : 'La correction apparaîtra ici.'}</p>` : ''}
       </div>
@@ -275,17 +275,17 @@ function studentQuiz(it, sub) {
       <div class="quiz-q ${corrected && key ? (ok ? 'ok' : 'ko') : ''}">
         <p class="quiz-prompt"><span class="qnum">${i + 1}</span> ${rich(q.prompt)}</p>
         ${input}
-        ${corrected && key ? `<p class="feedback">${ok ? '✅ Bonne réponse !' : `❌ La bonne réponse : <strong>${esc(expectedText(q, key.answer))}</strong>`}
+        ${corrected && key ? `<p class="feedback">${ok ? icon('circle-check') + ' Bonne réponse !' : `${icon('circle-x')} La bonne réponse : <strong>${esc(expectedText(q, key.answer))}</strong>`}
           ${key.explanation ? `<br><span class="muted">${rich(key.explanation)}</span>` : ''}</p>` : ''}
       </div>`;
   }).join('');
 
   const footer = draft
-    ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">📨 Envoyer mes réponses</button>
+    ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer mes réponses</button>
        <p class="hint">${it.instant_result ? 'Tu verras ton score et la correction juste après l’envoi.' : 'Ton prof validera tes réponses avant que tu voies le résultat.'}</p>`
     : corrected
       ? `<div class="quiz-score ${sub.score === sub.total ? 'perfect' : ''}">
-           ${sub.score === sub.total ? '🏆 Parfait !' : sub.score >= sub.total / 2 ? '👍 Pas mal !' : '💪 Continue tes efforts !'}
+           ${sub.score === sub.total ? icon('trophy') + ' Parfait !' : sub.score >= sub.total / 2 ? icon('thumbs-up') + ' Pas mal !' : icon('biceps-flexed') + ' Continue tes efforts !'}
            Score : <strong>${sub.score} / ${sub.total}</strong></div>`
       : '';
 
@@ -313,7 +313,7 @@ async function refreshStudentItem(iid) {
   const p = progressOf(items, S.subs);
   const hp = $('.hero-progress');
   if (hp) hp.innerHTML = `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p)}
-    ${p.total && p.done === p.total ? '<p class="cheer">🎉 Bravo, tu as tout terminé !</p>' : ''}`;
+    ${p.total && p.done === p.total ? '<p class="cheer">' + icon('party-popper') + ' Bravo, tu as tout terminé !</p>' : ''}`;
 }
 
 async function studentSave(iid, patch, { redraw = true } = {}) {
@@ -331,7 +331,7 @@ function scheduleAnswerSave(iid, patch) {
     try {
       await studentSave(iid, patch(), { redraw: false });
       const el = $('#save-' + iid);
-      if (el) el.textContent = 'Brouillon enregistré ✓';
+      if (el) el.textContent = 'Brouillon enregistré';
     } catch (e) { showError(e); }
   }, 700);
 }
@@ -371,7 +371,7 @@ async function studentSubmit(iid, btn) {
       S.subs[iid] = await Api.studentSubmit(iid);
     });
     await refreshStudentItem(iid);
-    toast(S.subs[iid].status === 'corrige' || S.solutions[iid]?.model_answer ? 'Envoyé ✓ Voici la correction !' : 'Envoyé à ton prof ✓');
+    toast(S.subs[iid].status === 'corrige' || S.solutions[iid]?.model_answer ? 'Envoyé. Voici la correction !' : 'Envoyé à ton prof');
     $('#item-' + iid)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) { showError(e); }
 }

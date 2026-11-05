@@ -843,3 +843,26 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
   :root:not([data-theme="light"]) .tag[data-s="svt"]      { --tag-bg: var(--c-lime);  --tag-fg: #141216; }
   :root:not([data-theme="light"]) { --tag-l: 82%; --tag-ink-l: 18%; }
 }
+
+/* =========================================================
+   Icônes vectorielles (Lucide)
+   ========================================================= */
+.icon { width: 1.15em; height: 1.15em; flex: none; display: inline-block; vertical-align: -0.2em; }
+.btn .icon, .nav-link .icon, .seg .icon, .chip .icon { width: 1.1em; height: 1.1em; }
+.status .icon, .tag .icon { width: 1em; height: 1em; vertical-align: -0.15em; }
+.icon-btn { display: inline-grid; place-items: center; }
+.icon-btn .icon { width: 18px; height: 18px; vertical-align: 0; }
+.login-logo { display: grid; place-items: center; color: var(--primary); }
+.login-logo .icon, .empty-icon .icon { width: 52px; height: 52px; stroke-width: 1.75; }
+.empty-icon { color: var(--primary); }
+.cta-arrow .icon { width: 20px; height: 20px; vertical-align: 0; }
+.counts span { display: inline-flex; align-items: center; gap: 4px; }
+.files .file > span:first-child { display: inline-grid; color: var(--muted); }
+.crumbs a { display: inline-flex; align-items: center; gap: 4px; }
+.crumbs .icon { width: 1em; height: 1em; }
+.section-title .icon, .item-section h2 .icon, .card h3 > .icon, .form h2 > .icon { color: var(--primary); }
+.s-item h3 .icon, .item-card .icon { color: inherit; }
+.feedback .icon, .cheer .icon { vertical-align: -0.22em; }
+.icon.wave { color: #f2b705; transform-origin: 70% 80%; animation: wave 1.6s ease-in-out 1; }
+@keyframes wave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(16deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(12deg); } }
+@media (prefers-reduced-motion: reduce) { .icon.wave { animation: none; } }

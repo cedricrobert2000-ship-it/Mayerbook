@@ -15,7 +15,7 @@ function viewLogin(tab = 'eleve') {
   return `
     <div class="login">
       <div class="login-brand">
-        <div class="login-logo">📘</div>
+        <div class="login-logo">${icon('book-open')}</div>
         <h1>Mayerbook</h1>
         <p class="muted">Le suivi de tes cours particuliers, semaine après semaine.</p>
       </div>
@@ -25,16 +25,16 @@ function viewLogin(tab = 'eleve') {
           <strong>Mode démo</strong>
           <p class="small">Les données restent dans ce navigateur. Essaie les deux côtés :</p>
           <div class="actions">
-            <button class="btn small" data-action="demo-login" data-who="prof">👩‍🏫 Entrer comme prof</button>
-            <button class="btn small" data-action="demo-login" data-who="lea">🧑‍🎓 Entrer comme élève (Léa)</button>
+            <button class="btn small" data-action="demo-login" data-who="prof">${icon('school')} Entrer comme prof</button>
+            <button class="btn small" data-action="demo-login" data-who="lea">${icon('graduation-cap')} Entrer comme élève (Léa)</button>
           </div>
           <p class="tiny muted">Prof : prof@demo.fr / demo1234 · Élèves : lea / 1234, hugo / 1234</p>
         </div>` : ''}
 
       <div class="card login-card-box">
         <div class="seg tabs">
-          <label><input type="radio" name="login-tab" value="eleve" ${tab === 'eleve' ? 'checked' : ''} data-action="login-tab"><span>🧑‍🎓 Élève</span></label>
-          <label><input type="radio" name="login-tab" value="prof" ${tab === 'prof' ? 'checked' : ''} data-action="login-tab"><span>👩‍🏫 Prof</span></label>
+          <label><input type="radio" name="login-tab" value="eleve" ${tab === 'eleve' ? 'checked' : ''} data-action="login-tab"><span>${icon('graduation-cap')} Élève</span></label>
+          <label><input type="radio" name="login-tab" value="prof" ${tab === 'prof' ? 'checked' : ''} data-action="login-tab"><span>${icon('school')} Prof</span></label>
         </div>
         ${tab === 'eleve' ? `
           <form class="form plain" id="login-student">
@@ -229,7 +229,7 @@ const Actions = {
     const w = T.week.week;
     try {
       await busy(el, '…', () => Api.saveWeek({ ...w, published: !w.published }));
-      toast(w.published ? 'Semaine masquée' : `Publiée : ${firstName(T.week.student.name)} la voit dans son espace ✓`);
+      toast(w.published ? 'Semaine masquée' : `Publiée : ${firstName(T.week.student.name)} la voit dans son espace`);
       rerender();
     } catch (e) { showError(e); }
   },
@@ -276,7 +276,7 @@ const Actions = {
     if (!confirm('Renvoyer ce travail à l’élève ? Il pourra modifier sa réponse et la renvoyer. Ton commentaire actuel lui sera affiché.')) return;
     try {
       await busy(el, '…', () => Api.returnToStudent(T.copy.sub.id, fb));
-      toast('Renvoyé à l’élève ✓');
+      toast('Renvoyé à l’élève');
       location.hash = `#/semaine/${T.copy.week.id}`;
     } catch (e) { showError(e); }
   },
@@ -320,7 +320,7 @@ document.addEventListener('input', e => {
     clearTimeout(messageTimer);
     messageTimer = setTimeout(() => {
       Api.saveWeek({ ...T.week.week, message: t.value })
-        .then(w => { T.week.week = w; toast('Message enregistré ✓'); })
+        .then(w => { T.week.week = w; toast('Message enregistré'); })
         .catch(showError);
     }, 800);
   } else if (t.classList.contains('answer-text')) {

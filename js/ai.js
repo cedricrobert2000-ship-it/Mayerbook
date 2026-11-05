@@ -10,8 +10,8 @@
 const AI = { result: null, params: null, file: null, uploaded: null };
 
 const AI_LINKS = `
-  <a class="btn small" href="https://claude.ai/new" target="_blank" rel="noopener">Ouvrir Claude ↗</a>
-  <a class="btn small" href="https://chatgpt.com/" target="_blank" rel="noopener">Ouvrir ChatGPT ↗</a>`;
+  <a class="btn small" href="https://claude.ai/new" target="_blank" rel="noopener">Ouvrir Claude ${icon('external-link')}</a>
+  <a class="btn small" href="https://chatgpt.com/" target="_blank" rel="noopener">Ouvrir ChatGPT ${icon('external-link')}</a>`;
 
 /* ---------- Demande (prompt) de création ---------- */
 
@@ -150,7 +150,7 @@ function openAiDialog() {
   const subjects = unique([...(s.subjects || []), ...SUBJECTS]);
   const d = Modal.open(`
     <form class="form" id="ai-form">
-      <h2>✨ Créer avec Claude ou ChatGPT</h2>
+      <h2>${icon('sparkles')} Créer avec Claude ou ChatGPT</h2>
       <ol class="steps">
         <li>Choisis ce que tu veux : la demande se prépare automatiquement.</li>
         <li>Copie-la et colle-la dans Claude ou ChatGPT (joins ton document si besoin).</li>
@@ -159,10 +159,10 @@ function openAiDialog() {
 
       <fieldset class="field"><legend>Que veux-tu créer ?</legend>
         <div class="seg">
-          <label><input type="radio" name="type" value="exercice" checked><span>✏️ Exercices</span></label>
-          <label><input type="radio" name="type" value="quiz"><span>❓ Quiz</span></label>
-          <label><input type="radio" name="type" value="notion"><span>💡 Notions</span></label>
-          <label><input type="radio" name="type" value="mixte"><span>📦 Séance complète</span></label>
+          <label><input type="radio" name="type" value="exercice" checked><span>${icon('pencil')} Exercices</span></label>
+          <label><input type="radio" name="type" value="quiz"><span>${icon('circle-help')} Quiz</span></label>
+          <label><input type="radio" name="type" value="notion"><span>${icon('lightbulb')} Notions</span></label>
+          <label><input type="radio" name="type" value="mixte"><span>${icon('layers')} Séance complète</span></label>
         </div>
       </fieldset>
       <div class="row">
@@ -185,7 +185,7 @@ function openAiDialog() {
 
       <div class="prompt-box">
         <div class="prompt-head"><strong>① Demande à copier</strong>
-          <div class="actions"><button type="button" class="btn small primary" data-action="copy-prompt">📋 Copier</button>${AI_LINKS}</div></div>
+          <div class="actions"><button type="button" class="btn small primary" data-action="copy-prompt">${icon('copy')} Copier</button>${AI_LINKS}</div></div>
         <textarea id="ai-prompt" rows="7" readonly></textarea>
       </div>
 
@@ -280,18 +280,18 @@ function showAiPreview() {
     if (it.type === 'quiz') {
       body = `<ol class="answers">${it.questions.map(q => `
         <li><p><strong>${rich(q.prompt)}</strong></p>
-          ${q.options.length ? `<p class="small">${q.options.map((o, j) => j === Number(p.key.answers[q.id].answer) ? `<strong>✓ ${esc(o)}</strong>` : esc(o)).join(' · ')}</p>`
+          ${q.options.length ? `<p class="small">${q.options.map((o, j) => j === Number(p.key.answers[q.id].answer) ? `<strong>${icon('check')} ${esc(o)}</strong>` : esc(o)).join(' · ')}</p>`
             : `<p class="small">Réponse : <strong>${esc(p.key.answers[q.id].answer)}</strong></p>`}
           ${p.key.answers[q.id].explanation ? `<p class="small muted">${rich(p.key.answers[q.id].explanation)}</p>` : ''}</li>`).join('')}</ol>`;
     } else {
       body = `<div class="content">${rich(it.content)}</div>
-        ${p.key.model_answer ? `<details><summary class="small">🔒 Correction type</summary><div class="content small">${rich(p.key.model_answer)}</div></details>` : ''}`;
+        ${p.key.model_answer ? `<details><summary class="small">${icon('lock')} Correction type</summary><div class="content small">${rich(p.key.model_answer)}</div></details>` : ''}`;
     }
     return `
       <div class="card ai-preview type-${it.type}">
         <div class="ai-preview-head">
-          <label class="check"><input type="checkbox" data-ai-pick="${i}" checked> <span>${TYPES[it.type].icon}</span> <strong>${esc(it.title)}</strong></label>
-          <button type="button" class="btn small ghost" data-action="ai-edit" data-index="${i}">✎ Modifier puis ajouter</button>
+          <label class="check"><input type="checkbox" data-ai-pick="${i}" checked> ${icon(TYPES[it.type].icon)} <strong>${esc(it.title)}</strong></label>
+          <button type="button" class="btn small ghost" data-action="ai-edit" data-index="${i}">${icon('pencil')} Modifier puis ajouter</button>
         </div>
         ${body}
       </div>`;
@@ -299,11 +299,11 @@ function showAiPreview() {
 
   Modal.open(`
     <div class="form">
-      <h2>✨ Vérifie avant d’ajouter</h2>
+      <h2>${icon('sparkles')} Vérifie avant d’ajouter</h2>
       <p class="muted small">Tu pourras tout modifier ensuite. ${AI.file ? `Le fichier « ${esc(AI.file.name)} » sera joint.` : ''}</p>
       <div class="ai-results">${cards}</div>
       <div class="form-actions">
-        <button type="button" class="btn ghost" data-action="open-ai">↺ Recommencer</button>
+        <button type="button" class="btn ghost" data-action="open-ai">${icon('rotate-ccw')} Recommencer</button>
         <button type="button" class="btn primary" data-action="ai-add">Ajouter la sélection à la semaine</button>
       </div>
     </div>`, { wide: true });
@@ -329,7 +329,7 @@ async function aiAddSelected(btn) {
     AI.uploaded = null;
     Modal.close();
     rerender();
-    toast(`${plural(picked.length, 'élément ajouté', 'éléments ajoutés')} ✓`);
+    toast(plural(picked.length, 'élément ajouté', 'éléments ajoutés'));
   } catch (ex) { showError(ex); }
 }
 
@@ -371,10 +371,10 @@ function openCorrectionHelper() {
   const prompt = buildCorrectionPrompt();
   const d = Modal.open(`
     <form class="form" id="corr-ai-form">
-      <h2>✨ Corriger avec Claude ou ChatGPT</h2>
+      <h2>${icon('sparkles')} Corriger avec Claude ou ChatGPT</h2>
       <div class="prompt-box">
         <div class="prompt-head"><strong>① Demande à copier</strong>
-          <div class="actions"><button type="button" class="btn small primary" data-action="copy" data-text="${esc(prompt)}">📋 Copier</button>${AI_LINKS}</div></div>
+          <div class="actions"><button type="button" class="btn small primary" data-action="copy" data-text="${esc(prompt)}">${icon('copy')} Copier</button>${AI_LINKS}</div></div>
         <textarea rows="8" readonly>${esc(prompt)}</textarea>
       </div>
       ${sub.files?.length ? `<div class="field"><span>Photos / fichiers de l’élève à joindre dans l’IA</span>

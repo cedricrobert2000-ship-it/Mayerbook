@@ -33,20 +33,20 @@ async function viewTutorHome() {
         <p class="muted">${all.length ? plural(all.length, 'élève suivi', 'élèves suivis') : 'Commence par ajouter un élève.'}</p>
       </div>
       <div class="actions">
-        ${toCorrect.length ? `<a class="btn" href="#/corrections">📝 À corriger <span class="count-badge">${toCorrect.length}</span></a>` : ''}
-        <button class="btn primary" data-action="new-student">＋ Nouvel élève</button>
+        ${toCorrect.length ? `<a class="btn" href="#/corrections">${icon('clipboard-pen-line')} À corriger <span class="count-badge">${toCorrect.length}</span></a>` : ''}
+        <button class="btn primary" data-action="new-student">${icon('plus')} Nouvel élève</button>
       </div>
     </div>`;
 
   if (!all.length) {
     return head + `
       <div class="empty card">
-        <div class="empty-icon">👩‍🏫</div>
+        <div class="empty-icon">${icon('school')}</div>
         <h2>Bienvenue sur Mayerbook</h2>
         <p>Crée une fiche par élève : Mayerbook lui donne un <strong>identifiant</strong> et un <strong>code</strong>
         pour se connecter à son espace. Chaque semaine, tu lui prépares des notions, des exercices et des quiz
         (à la main ou avec l’IA), il répond en ligne et tu corriges.</p>
-        <div class="actions center"><button class="btn primary" data-action="new-student">＋ Ajouter mon premier élève</button></div>
+        <div class="actions center"><button class="btn primary" data-action="new-student">${icon('plus')} Ajouter mon premier élève</button></div>
       </div>`;
   }
 
@@ -110,7 +110,7 @@ async function viewTutorStudent(sid) {
     const pending = its.filter(i => subsByItem[i.id]?.status === 'envoye').length;
     const counts = TYPE_ORDER.map(t => {
       const n = its.filter(i => i.type === t).length;
-      return n ? `<span>${TYPES[t].icon} ${n}</span>` : '';
+      return n ? `<span>${icon(TYPES[t].icon)} ${n}</span>` : '';
     }).join('');
     return `
       <a class="card week-row" href="#/semaine/${w.id}">
@@ -128,7 +128,7 @@ async function viewTutorStudent(sid) {
   }).join('');
 
   return `
-    <nav class="crumbs"><a href="#/">← Mes élèves</a></nav>
+    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mes élèves</a></nav>
     <div class="page-head">
       <div class="student-head">
         ${avatar(s.name, 'lg')}
@@ -151,7 +151,7 @@ async function viewTutorStudent(sid) {
 
     <div class="card account">
       <div>
-        <h3>🔑 Connexion de l’élève</h3>
+        <h3>${icon('key-round')} Connexion de l’élève</h3>
         <p class="small">Identifiant : <code class="big-code">${esc(s.username)}</code></p>
         <p class="small muted">Le code est choisi par toi. Tu peux le changer à tout moment.</p>
       </div>
@@ -169,7 +169,7 @@ async function viewTutorStudent(sid) {
 
     <div class="section-head">
       <h2>Semaines</h2>
-      <button class="btn primary" data-action="new-week">＋ Nouvelle semaine</button>
+      <button class="btn primary" data-action="new-week">${icon('plus')} Nouvelle semaine</button>
     </div>
     ${weekRows || '<div class="empty card"><p>Aucune semaine pour l’instant.</p></div>'}`;
 }
@@ -188,8 +188,8 @@ async function viewTutorWeek(wid) {
     return `
       <section class="item-section">
         <div class="section-head">
-          <h2>${TYPES[type].icon} ${TYPES[type].plural} <span class="muted count">${list.length}</span></h2>
-          <button class="btn small" data-action="add-item" data-type="${type}">＋ Ajouter</button>
+          <h2>${icon(TYPES[type].icon)} ${TYPES[type].plural} <span class="muted count">${list.length}</span></h2>
+          <button class="btn small" data-action="add-item" data-type="${type}">${icon('plus')} Ajouter</button>
         </div>
         ${list.length ? list.map((it, i) => tutorItemCard(it, subs[it.id], i, list.length)).join('')
           : `<p class="muted small empty-line">Rien pour l’instant.</p>`}
@@ -213,7 +213,7 @@ async function viewTutorWeek(wid) {
       <div class="layout-main">
         <div class="card ai-card">
           <div>
-            <h3>✨ Créer avec l’IA</h3>
+            <h3>${icon('sparkles')} Créer avec l’IA</h3>
             <p class="small muted">Prépare en un clic la demande à coller dans Claude ou ChatGPT (exercices, quiz, notions
             adaptés au niveau de ${esc(firstName(s.name))}), puis importe sa réponse ici.</p>
           </div>
@@ -231,7 +231,7 @@ async function viewTutorWeek(wid) {
 
       <aside class="layout-side">
         <div class="card publish-card ${w.published ? 'is-published' : ''}">
-          <h3>${w.published ? '✅ Visible par l’élève' : '🙈 Brouillon'}</h3>
+          <h3>${w.published ? icon('eye') + ' Visible par l’élève' : icon('eye-off') + ' Brouillon'}</h3>
           <p class="small muted">${w.published
             ? `${esc(firstName(s.name))} voit cette semaine dans son espace.`
             : `${esc(firstName(s.name))} ne voit pas encore cette semaine. Publie-la quand elle est prête.`}</p>
@@ -239,13 +239,13 @@ async function viewTutorWeek(wid) {
             ${w.published ? 'Masquer' : 'Publier pour l’élève'}</button>
         </div>
         <div class="card">
-          <h3>📊 Avancement</h3>
+          <h3>${icon('chart-column')} Avancement</h3>
           <div class="big-pct">${p.pct}%</div>
           ${progressBar(p)}
           <p class="small">${p.done} / ${p.total} terminé${p.done > 1 ? 's' : ''}</p>
         </div>
         <div class="card">
-          <h3>➡️ Semaine suivante</h3>
+          <h3>${icon('arrow-right')} Semaine suivante</h3>
           <p class="small muted">Crée la semaine d’après en reprenant ce qui n’est pas acquis.</p>
           <button class="btn block" data-action="next-week">Préparer la semaine suivante</button>
         </div>
@@ -256,12 +256,12 @@ async function viewTutorWeek(wid) {
 function tutorItemCard(it, sub, idx, count) {
   let status = '';
   if (it.type === 'notion') {
-    status = sub?.understood ? '<span class="status ok">✓ Comprise</span>' : '';
+    status = sub?.understood ? '<span class="status ok">' + icon('check') + ' Comprise</span>' : '';
   } else if (sub?.status === 'envoye') {
-    status = `<a class="status ko" href="#/copie/${sub.id}">📝 À corriger</a>`;
+    status = `<a class="status ko" href="#/copie/${sub.id}">${icon('clipboard-pen-line')} À corriger</a>`;
   } else if (sub?.status === 'corrige') {
     const score = it.type === 'quiz' && sub.total ? ` · ${sub.score}/${sub.total}` : (sub.grade ? ` · ${esc(sub.grade)}` : '');
-    status = `<a class="status ok" href="#/copie/${sub.id}">✓ Corrigé${score}</a>`;
+    status = `<a class="status ok" href="#/copie/${sub.id}">${icon('check')} Corrigé${score}</a>`;
   } else if (sub && (sub.answer || Object.keys(sub.answers || {}).length || sub.files?.length)) {
     status = '<span class="status mid">En cours</span>';
   }
@@ -269,11 +269,11 @@ function tutorItemCard(it, sub, idx, count) {
     ? `${plural(it.questions?.length || 0, 'question')} · ${it.instant_result ? 'score affiché à l’envoi' : 'score après ta validation'}`
     : truncate(String(it.content || '').replace(/\*\*/g, ''), 140);
   const extras = [
-    it.attachments?.length ? `📎 ${plural(it.attachments.length, 'fichier')}` : '',
+    it.attachments?.length ? plural(it.attachments.length, 'fichier joint', 'fichiers joints') : '',
     it.type === 'exercice' ? ANSWER_MODES[it.answer_mode] : '',
     it.type === 'exercice' && T.week.keys[it.id]?.model_answer
       ? (!it.share_model ? 'Correction privée' : it.instant_result ? 'Correction montrée après l’envoi' : 'Correction montrée après ta correction') : '',
-    it.link ? '🔗 Lien' : ''
+    it.link ? 'Lien' : ''
   ].filter(Boolean).join(' · ');
   return `
     <div class="card item-card type-${it.type}">
@@ -284,10 +284,10 @@ function tutorItemCard(it, sub, idx, count) {
         ${extras ? `<p class="tiny muted">${esc(extras)}</p>` : ''}
       </div>
       <div class="item-card-tools">
-        <button class="icon-btn" title="Monter" data-action="move-item" data-dir="-1" data-iid="${it.id}" ${idx === 0 ? 'disabled' : ''}>↑</button>
-        <button class="icon-btn" title="Descendre" data-action="move-item" data-dir="1" data-iid="${it.id}" ${idx === count - 1 ? 'disabled' : ''}>↓</button>
-        <button class="icon-btn" title="Modifier" data-action="edit-item" data-iid="${it.id}">✎</button>
-        <button class="icon-btn danger" title="Supprimer" data-action="delete-item" data-iid="${it.id}">🗑</button>
+        <button class="icon-btn" title="Monter" data-action="move-item" data-dir="-1" data-iid="${it.id}" ${idx === 0 ? 'disabled' : ''}>${icon('arrow-up')}</button>
+        <button class="icon-btn" title="Descendre" data-action="move-item" data-dir="1" data-iid="${it.id}" ${idx === count - 1 ? 'disabled' : ''}>${icon('arrow-down')}</button>
+        <button class="icon-btn" title="Modifier" data-action="edit-item" data-iid="${it.id}">${icon('pencil')}</button>
+        <button class="icon-btn danger" title="Supprimer" data-action="delete-item" data-iid="${it.id}">${icon('trash-2')}</button>
       </div>
     </div>`;
 }
@@ -304,16 +304,16 @@ async function viewTutorCorrections() {
     <a class="card week-row" href="#/copie/${sub.id}">
       <div class="week-row-main">
         <div class="item-card-top">${avatar(student.name, 'sm')} <strong>${esc(student.name)}</strong> <span class="badge">${esc(student.level)}</span> ${subjectTag(item.subject)}</div>
-        <h3>${TYPES[item.type].icon} ${esc(item.title)}</h3>
+        <h3>${icon(TYPES[item.type].icon)} ${esc(item.title)}</h3>
         <p class="small muted">Envoyé le ${fmtDateTime(sub.submitted_at)}</p>
       </div>
-      <div class="week-row-side"><span class="btn small primary">Corriger →</span></div>
+      <div class="week-row-side"><span class="btn small primary">Corriger ${icon('arrow-right')}</span></div>
     </a>`).join('');
   return `
-    <nav class="crumbs"><a href="#/">← Mes élèves</a></nav>
-    <div class="page-head"><div><h1>📝 À corriger</h1>
-      <p class="muted">${list.length ? plural(list.length, 'copie envoyée', 'copies envoyées') + ' par tes élèves' : 'Tout est corrigé 🎉'}</p></div></div>
-    ${rows || '<div class="empty card"><div class="empty-icon">✅</div><p>Aucune copie en attente.</p></div>'}`;
+    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mes élèves</a></nav>
+    <div class="page-head"><div><h1>À corriger</h1>
+      <p class="muted">${list.length ? plural(list.length, 'copie envoyée', 'copies envoyées') + ' par tes élèves' : 'Tout est corrigé, bravo !'}</p></div></div>
+    ${rows || '<div class="empty card"><div class="empty-icon">' + icon('circle-check') + '</div><p>Aucune copie en attente.</p></div>'}`;
 }
 
 async function viewTutorCopy(subId) {
@@ -333,7 +333,7 @@ async function viewTutorCopy(subId) {
         const ok = isCorrect(q, k?.answer, val);
         return `<li class="${ok ? 'ok' : 'ko'}">
           <p><strong>${rich(q.prompt)}</strong></p>
-          <p>${ok ? '✅' : '❌'} Réponse : ${esc(answerText(q, val))}</p>
+          <p>${ok ? icon('circle-check') : icon('circle-x')} Réponse : ${esc(answerText(q, val))}</p>
           ${ok ? '' : `<p class="muted">Attendu : ${esc(expectedText(q, k?.answer))}</p>`}
         </li>`;
       }).join('')}</ol>`;
@@ -348,7 +348,7 @@ async function viewTutorCopy(subId) {
     <nav class="crumbs"><a href="#/corrections">À corriger</a> › <a href="#/semaine/${week.id}">${esc(student.name)} · ${esc(weekLabel(week))}</a></nav>
     <div class="page-head">
       <div>
-        <h1>${TYPES[item.type].icon} ${esc(item.title)}</h1>
+        <h1>${esc(item.title)}</h1>
         <p class="muted">${esc(student.name)} · ${esc(student.level)} · ${subjectTag(item.subject)}
           ${sub.submitted_at ? ` · envoyé le ${fmtDateTime(sub.submitted_at)}` : ''}</p>
       </div>
@@ -371,15 +371,15 @@ async function viewTutorCopy(subId) {
 
         ${key.model_answer ? `
           <details class="card subtle">
-            <summary><strong>📘 Ta correction type</strong> <span class="muted small">(${!item.share_model ? 'privée' : item.instant_result ? 'déjà visible par l’élève depuis son envoi' : 'sera montrée à l’élève avec ta correction'})</span></summary>
+            <summary><strong>${icon('book-open')} Ta correction type</strong> <span class="muted small">(${!item.share_model ? 'privée' : item.instant_result ? 'déjà visible par l’élève depuis son envoi' : 'sera montrée à l’élève avec ta correction'})</span></summary>
             <div class="content">${rich(key.model_answer)}</div>
             <button class="btn small" data-action="insert-model">Insérer dans ma correction</button>
           </details>` : ''}
 
         <form class="card form-inline" id="correction-form">
           <div class="section-head tight">
-            <h2>✍️ Ma correction détaillée</h2>
-            <button type="button" class="btn small" data-action="ai-correct" ${sent ? '' : 'disabled'}>✨ Corriger avec Claude / ChatGPT</button>
+            <h2>${icon('pen-line')} Ma correction détaillée</h2>
+            <button type="button" class="btn small" data-action="ai-correct" ${sent ? '' : 'disabled'}>${icon('sparkles')} Corriger avec Claude / ChatGPT</button>
           </div>
           <textarea name="feedback" rows="10" placeholder="Explique ce qui est juste, chaque erreur et comment progresser…">${esc(sub.feedback)}</textarea>
           <span class="hint">**texte** pour mettre en gras. Ta correction n’est visible par l’élève qu’après avoir cliqué sur « Envoyer la correction ».</span>
@@ -388,10 +388,10 @@ async function viewTutorCopy(subId) {
           <div class="field">
             <span>Fichiers joints <span class="muted">(ex : photo de la copie annotée)</span></span>
             <div id="feedback-files">${fileList(T.copy.feedbackFiles, { removable: true, dataAttr: 'data-list="feedback"' })}</div>
-            <label class="btn small file-btn">📎 Ajouter un fichier<input type="file" data-upload="feedback" multiple hidden></label>
+            <label class="btn small file-btn">${icon('paperclip')} Ajouter un fichier<input type="file" data-upload="feedback" multiple hidden></label>
           </div>
           <div class="form-actions static">
-            ${sent ? '<button type="button" class="btn ghost" data-action="return-copy">↩︎ Renvoyer à l’élève pour qu’il refasse</button>' : ''}
+            ${sent ? '<button type="button" class="btn ghost" data-action="return-copy">' + icon('undo-2') + ' Renvoyer à l’élève pour qu’il refasse</button>' : ''}
             <button class="btn primary" ${sent ? '' : 'disabled'}>${sub.status === 'corrige' ? 'Mettre à jour la correction' : 'Envoyer la correction'}</button>
           </div>
           ${sent ? '' : '<p class="hint">L’élève n’a pas encore envoyé ce travail.</p>'}
@@ -470,7 +470,7 @@ function openStudentForm(existing) {
           await Api.updateStudent(s.id, data);
           Modal.close();
           rerender();
-          toast('Élève enregistré ✓');
+          toast('Élève enregistré');
         } else {
           data.username = String(f.get('username')).trim().toLowerCase();
           data.code = String(f.get('code')).trim();
@@ -486,14 +486,14 @@ function openStudentForm(existing) {
 
 function loginInstructions(username, code) {
   return `Bonjour ! Voici ton accès à Mayerbook pour suivre ton travail de la semaine :\n` +
-    `🔗 ${location.href.split('#')[0]}\n👤 Identifiant : ${username}\n🔑 Code : ${code || '(donné par ton prof)'}`;
+    `Lien : ${location.href.split('#')[0]}\nIdentifiant : ${username}\nCode : ${code || '(donné par ton prof)'}`;
 }
 
 function showLoginInfo(student, code) {
   const text = loginInstructions(student.username, code);
   Modal.open(`
     <div class="form">
-      <h2>🎉 ${esc(student.name)} a son compte</h2>
+      <h2>${icon('party-popper')} ${esc(student.name)} a son compte</h2>
       <p>Donne-lui ces informations pour se connecter (sur téléphone, tablette ou ordinateur) :</p>
       <div class="login-card">
         <p>Identifiant <code class="big-code">${esc(student.username)}</code></p>
@@ -501,8 +501,8 @@ function showLoginInfo(student, code) {
       </div>
       <p class="hint">Note bien le code : pour des raisons de sécurité, il ne sera plus affiché. Tu pourras en choisir un nouveau à tout moment.</p>
       <div class="actions wrap">
-        <button type="button" class="btn" data-action="copy" data-text="${esc(text)}">📋 Copier le message</button>
-        <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">💬 WhatsApp</a>
+        <button type="button" class="btn" data-action="copy" data-text="${esc(text)}">${icon('copy')} Copier le message</button>
+        <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">${icon('message-circle')} WhatsApp</a>
       </div>
       <div class="form-actions"><a class="btn primary" href="#/eleve/${student.id}" data-action="close-modal-go">Continuer</a></div>
     </div>`);
@@ -512,7 +512,7 @@ function openResetCode() {
   const s = T.student;
   const d = Modal.open(`
     <form class="form">
-      <h2>🔑 Nouveau code pour ${esc(s.name)}</h2>
+      <h2>${icon('key-round')} Nouveau code pour ${esc(s.name)}</h2>
       <label class="field"><span>Nouveau code</span>
         <input name="code" required minlength="4" maxlength="40" value="${randomCode()}" autocomplete="off"></label>
       <p class="form-error" hidden></p>
@@ -587,7 +587,7 @@ function openNextWeekForm() {
         ${opt('notions', notions, 'Notions pas encore comprises')}
         ${opt('exos', exos, 'Exercices non rendus ou non corrigés')}
         ${opt('quizzes', quizzes, 'Quiz non réussis à 100 %')}
-      </fieldset>` : '<p class="notice ok">🎉 Tout est acquis ! La nouvelle semaine sera vide.</p>'}
+      </fieldset>` : '<p class="notice ok">' + icon('party-popper') + ' Tout est acquis ! La nouvelle semaine sera vide.</p>'}
       <div class="form-actions">
         <button type="button" class="btn ghost" data-action="close-modal">Annuler</button>
         <button class="btn primary">Créer la semaine</button>
@@ -607,7 +607,7 @@ function openNextWeekForm() {
         }
         Modal.close();
         location.hash = `#/semaine/${nw.id}`;
-        toast('Nouvelle semaine créée ✓');
+        toast('Nouvelle semaine créée');
       });
     } catch (err) { showError(err); }
   };
@@ -656,7 +656,7 @@ function openItemForm(type, iid, preset) {
 
   const d = Modal.open(`
     <form class="form" novalidate>
-      <h2>${TYPES[type].icon} ${existing ? 'Modifier' : 'Ajouter'} ${TYPES[type].un}</h2>
+      <h2>${icon(TYPES[type].icon)} ${existing ? 'Modifier' : 'Ajouter'} ${TYPES[type].un}</h2>
       <div class="row">
         <label class="field"><span>Matière</span>
           <select name="subject">${subjects.map(x => `<option ${x === draft.subject ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
@@ -670,7 +670,7 @@ function openItemForm(type, iid, preset) {
         <div class="field">
           <span>Fichiers pour l’élève <span class="muted">(fiche d’exercices PDF, photo, document…)</span></span>
           <div id="att-list"></div>
-          <label class="btn small file-btn">📎 Importer un fichier<input type="file" data-upload="attachments" multiple hidden></label>
+          <label class="btn small file-btn">${icon('paperclip')} Importer un fichier<input type="file" data-upload="attachments" multiple hidden></label>
         </div>` : ''}
       ${type === 'notion' ? `
         <label class="field"><span>Lien utile <span class="muted">(vidéo, fiche… optionnel)</span></span>
@@ -678,7 +678,7 @@ function openItemForm(type, iid, preset) {
       ${type === 'exercice' ? `
         <label class="field"><span>Comment l’élève répond</span>
           <select name="answer_mode">${Object.entries(ANSWER_MODES).map(([k, v]) => `<option value="${k}" ${draft.answer_mode === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label class="field"><span>🔒 Correction type <span class="muted">(visible seulement par toi, sert aussi à l’IA pour corriger)</span></span>
+        <label class="field"><span>${icon('lock')} Correction type <span class="muted">(visible seulement par toi, sert aussi à l’IA pour corriger)</span></span>
           <textarea name="model_answer" rows="4">${esc(draft.model_answer)}</textarea></label>
         <label class="field"><span>Quand l’élève voit cette correction</span>
           <select name="show_model">
@@ -692,9 +692,9 @@ function openItemForm(type, iid, preset) {
           <span class="hint">Sinon, il les verra après ta validation.</span></label>
         <div class="q-list" id="q-list"></div>
         <div class="actions">
-          <button type="button" class="btn small" data-q="add" data-qtype="qcm">＋ QCM</button>
-          <button type="button" class="btn small" data-q="add" data-qtype="vf">＋ Vrai / Faux</button>
-          <button type="button" class="btn small" data-q="add" data-qtype="texte">＋ Réponse courte</button>
+          <button type="button" class="btn small" data-q="add" data-qtype="qcm">${icon('plus')} QCM</button>
+          <button type="button" class="btn small" data-q="add" data-qtype="vf">${icon('plus')} Vrai / Faux</button>
+          <button type="button" class="btn small" data-q="add" data-qtype="texte">${icon('plus')} Réponse courte</button>
         </div>` : ''}
       <p class="form-error" hidden></p>
       <div class="form-actions">
@@ -816,7 +816,7 @@ function openItemForm(type, iid, preset) {
       await busy(form.querySelector('button.primary'), 'Enregistrement…', () => Api.saveItem(item, k));
       Modal.close();
       rerender();
-      toast('Enregistré ✓');
+      toast('Enregistré');
     } catch (ex) { err(ex.message); }
   };
 }
@@ -830,9 +830,9 @@ function questionEditor(q, i) {
           <div class="opt-row">
             <label class="radio" title="Bonne réponse"><input type="radio" name="ok-${q.id}" value="${j}" ${Number(q.answer) === j ? 'checked' : ''}></label>
             <input class="q-opt" value="${esc(o)}" placeholder="Choix ${j + 1}">
-            ${q.options.length > 2 ? `<button type="button" class="icon-btn" data-q="remove-opt" data-oi="${j}" title="Retirer">✕</button>` : ''}
+            ${q.options.length > 2 ? `<button type="button" class="icon-btn" data-q="remove-opt" data-oi="${j}" title="Retirer">${icon('x')}</button>` : ''}
           </div>`).join('')}
-        ${q.options.length < 6 ? '<button type="button" class="btn small ghost" data-q="add-opt">＋ Ajouter un choix</button>' : ''}
+        ${q.options.length < 6 ? '<button type="button" class="btn small ghost" data-q="add-opt">' + icon('plus') + ' Ajouter un choix</button>' : ''}
         <p class="hint">Coche le rond de la bonne réponse.</p>
       </div>`;
   } else if (q.type === 'vf') {
@@ -858,8 +858,8 @@ function questionEditor(q, i) {
           <option value="texte" ${q.type === 'texte' ? 'selected' : ''}>Réponse courte</option>
         </select>
         <span class="spacer"></span>
-        ${i > 0 ? '<button type="button" class="icon-btn" data-q="up" title="Monter">↑</button>' : ''}
-        <button type="button" class="icon-btn danger" data-q="remove" title="Supprimer la question">🗑</button>
+        ${i > 0 ? '<button type="button" class="icon-btn" data-q="up" title="Monter">' + icon('arrow-up') + '</button>' : ''}
+        <button type="button" class="icon-btn danger" data-q="remove" title="Supprimer la question">${icon('trash-2')}</button>
       </div>
       <textarea class="q-prompt" rows="2" placeholder="Énoncé de la question">${esc(q.prompt)}</textarea>
       ${body}
@@ -894,7 +894,7 @@ async function submitCorrection(form) {
   if (!feedback && !confirm('Envoyer la correction sans commentaire ?')) return;
   await busy(form.querySelector('button.primary'), 'Envoi…', () =>
     Api.correct(T.copy.sub.id, { feedback, grade: String(f.get('grade')).trim(), feedback_files: T.copy.feedbackFiles }));
-  toast('Correction envoyée à l’élève ✓');
+  toast('Correction envoyée à l’élève');
   const next = (await Api.listToCorrect())[0];
   location.hash = next ? `#/copie/${next.sub.id}` : `#/semaine/${T.copy.week.id}`;
 }
