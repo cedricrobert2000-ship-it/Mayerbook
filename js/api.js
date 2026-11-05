@@ -146,15 +146,15 @@ function createSupaApi(cfg) {
 
     /* --- Prof : élèves --- */
     async createStudent(data) {
-      const r = await callFn('eleves', { action: 'create', ...data });
+      const r = await callFn(cfg.fonctionEleves || 'eleves', { action: 'create', ...data });
       return r.student;
     },
     async updateStudent(id, data) {
       check(await sb.from('students').update({ name: data.name, level: data.level, subjects: data.subjects }).eq('id', id));
       check(await sb.from('student_private').upsert({ student_id: id, contact: data.contact, notes: data.notes }));
     },
-    async resetCode(id, code) { await callFn('eleves', { action: 'reset_code', student_id: id, code }); },
-    async deleteStudent(id) { await callFn('eleves', { action: 'delete', student_id: id }); },
+    async resetCode(id, code) { await callFn(cfg.fonctionEleves || 'eleves', { action: 'reset_code', student_id: id, code }); },
+    async deleteStudent(id) { await callFn(cfg.fonctionEleves || 'eleves', { action: 'delete', student_id: id }); },
 
     /* --- Prof : semaines et éléments --- */
     async saveWeek(w) {

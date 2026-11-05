@@ -8,5 +8,9 @@
  */
 window.MAYERBOOK_CONFIG = {
   supabaseUrl: 'https://essmphsqbicerwagvdlm.supabase.co',
-  supabaseAnonKey: 'sb_publishable_J330if75_M893VudeTWgXA_PcgHjn16'
+  supabaseAnonKey: 'sb_publishable_J330if75_M893VudeTWgXA_PcgHjn16',
+
+  // Nom de la fonction « eleves » tel qu'il apparaît à la FIN de son URL dans
+  // Supabase > Edge Functions (ex : .../functions/v1/clever-api → 'clever-api').
+  fonctionEleves: 'clever-api'
 };
