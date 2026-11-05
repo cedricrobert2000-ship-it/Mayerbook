@@ -56,7 +56,7 @@ async function viewStudentHome() {
     const todo = its.filter(i => !isItemDone(i, S.subs[i.id]));
     currentCard = `
       <a class="card current-week has-mascot" href="#/semaine/${current.id}">
-        <div class="card-mascot">${mascotForProgress(p, 130)}</div>
+        <div class="card-mascot">${faceForProgress(p, 170)}</div>
         <p class="muted small">${isCurrentWeek(current) ? 'Cette semaine' : 'Dernière semaine'} · ${esc(weekLabel(current))}</p>
         <h2>${current.title ? esc(current.title) : 'Mon travail de la semaine'}</h2>
         ${current.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(current.message)}</div>` : ''}
@@ -70,25 +70,25 @@ async function viewStudentHome() {
 
   return `
     <div class="hero">
-      <h1>Bonjour ${esc(firstName(student.name))} ${mascot('zap', { mood: 'happy', anim: 'wiggle', size: 46 })}</h1>
+      <h1>Bonjour ${esc(firstName(student.name))} <button class="mascot-btn" data-action="pick-mascot" title="Changer de personnage">${mascot(myMascot() || 'zap', { mood: myMascot() === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 48 })}</button></h1>
       <p class="muted">${esc(student.level)} · ${(student.subjects || []).map(subjectTag).join(' ')}</p>
     </div>
 
     ${fresh.length ? `
       <div class="card new-corrections">
-        <h3 class="nc-head"><span>${icon('mail-check')} ${fresh.length === 1 ? 'Nouvelle correction' : `${fresh.length} nouvelles corrections`}</span>${mascot('wow', { mood: 'wow', anim: 'pop', size: 40 })}</h3>
+        <h3 class="nc-head"><span>${icon('mail-check')} ${fresh.length === 1 ? 'Nouvelle correction' : `${fresh.length} nouvelles corrections`}</span></h3>
         ${fresh.map(i => `<a class="corr-link" href="#/semaine/${i.week_id}?item=${i.id}">${icon(TYPES[i.type].icon)} ${esc(i.title)}
           ${S.subs[i.id].grade ? `<span class="status ok">${esc(S.subs[i.id].grade)}</span>` : i.type === 'quiz' ? `<span class="status ok">${S.subs[i.id].score}/${S.subs[i.id].total}</span>` : ''}</a>`).join('')}
       </div>` : ''}
 
-    ${currentCard || '<div class="empty card">' + mascot('snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>'}
+    ${currentCard || '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>'}
 
     ${items.length ? `
       <h2 class="section-title">${icon('trending-up')} Mon suivi</h2>
       <div class="stat-row">
-        <div class="card stat"><span class="stat-mascot">${mascot('zap', { mood: exDone ? 'happy' : 'meh', size: 54 })}</span><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
-        <div class="card stat"><span class="stat-mascot">${qAvg === null ? mascot('snooze', { mood: 'sleep', size: 54 }) : mascotForScore(qAvg / 100, 54)}</span><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
-        <div class="card stat"><span class="stat-mascot">${mascot('wow', { mood: corrected.length ? 'wow' : 'calm', size: 54 })}</span><span class="stat-num">${corrected.length}</span><span class="muted small">corrections reçues</span></div>
+        <div class="card stat"><span class="stat-mascot">${mascotFace(exDone ? 'happy' : 'meh', { size: 92 })}</span><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
+        <div class="card stat"><span class="stat-mascot">${qAvg === null ? mascotFace('sleep', { size: 92, anim: 'sleep' }) : faceForScore(qAvg / 100, 92)}</span><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
+        <div class="card stat"><span class="stat-mascot">${mascotFace(corrected.length ? 'wow' : 'calm', { size: 92 })}</span><span class="stat-num">${corrected.length}</span><span class="muted small">corrections reçues</span></div>
       </div>
       <div class="card">
         <h3>Par matière</h3>
@@ -149,7 +149,7 @@ function studentWeekHtml(week, items) {
   return `
     <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mon suivi</a></nav>
     <div class="hero card has-mascot">
-      <div class="card-mascot">${mascotForProgress(p, 130)}</div>
+      <div class="card-mascot">${faceForProgress(p, 170)}</div>
       <p class="muted">${esc(weekLabel(week))}</p>
       <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
       ${week.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(week.message)}</div>` : ''}
@@ -159,19 +159,19 @@ function studentWeekHtml(week, items) {
         ${p.total && p.done === p.total ? '<p class="cheer">Bravo, tu as tout terminé !</p>' : ''}
       </div>
     </div>
-    ${sections || '<div class="empty card">' + mascot('snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
+    ${sections || '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
 }
 
 function statusBanner(it, sub) {
   if (!sub || sub.status === 'brouillon') {
-    if (sub?.feedback) return `<div class="feedback-box warn inline-mascot">${mascot('meh', { mood: 'sad', anim: 'pop', size: 52 })}<div><strong>Ton prof te demande de refaire ce travail :</strong><div>${rich(sub.feedback)}</div></div></div>`;
+    if (sub?.feedback) return `<div class="feedback-box warn"><strong>${icon('undo-2')} Ton prof te demande de refaire ce travail :</strong><div>${rich(sub.feedback)}</div></div>`;
     return '';
   }
   if (sub.status === 'envoye') {
     const sol = S.solutions[it.id] || {};
-    return `<div class="sent-box inline-mascot">${mascot('wow', { mood: 'happy', anim: 'pop', size: 46 })}<div>Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
+    return `<div class="sent-box">${icon('send')} Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
       (sol.model_answer ? 'Compare ta réponse avec la correction ci-dessous : ton prof va aussi corriger <strong>ta</strong> copie.'
-        : '<strong>En attente de correction</strong> par ton prof.') + '</div></div>';
+        : '<strong>En attente de correction</strong> par ton prof.') + '</div>';
   }
   return '';
 }
@@ -183,7 +183,7 @@ function correctionBlock(it, sub) {
   const hasFeedback = corrected && (sub.feedback || sub.grade || sub.feedback_files?.length);
   return `
     ${hasFeedback ? `<div class="feedback-box">
-      <div class="feedback-head"><strong class="inline-mascot">${mascot('zen', { mood: 'proud', anim: 'pop', size: 40 })} Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
+      <div class="feedback-head"><strong>${icon('circle-check')} Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
       ${sub.feedback ? `<div class="content">${rich(sub.feedback)}</div>` : ''}
       ${imagePreviews(sub.feedback_files)}${fileList(sub.feedback_files)}
     </div>` : ''}
@@ -201,7 +201,7 @@ function studentItem(it) {
         ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}
         ${fileList(it.attachments)}
         ${it.link ? `<p><a class="resource" href="${esc(it.link)}" target="_blank" rel="noopener">${icon('link')} Ressource pour revoir la notion</a></p>` : ''}
-        <button class="toggle ${ok ? 'on' : ''}" data-action="st-understood" data-iid="${it.id}">${ok ? mascot('zen', { mood: 'happy', anim: 'pop', size: 34 }) + ' J’ai compris !' : 'J’ai compris cette notion'}</button>
+        <button class="toggle ${ok ? 'on' : ''}" data-action="st-understood" data-iid="${it.id}">${ok ? icon('check') + ' J’ai compris' : 'J’ai compris cette notion'}</button>
       </article>`;
   }
   if (it.type === 'exercice') return studentExercise(it, sub);
@@ -277,7 +277,7 @@ function studentQuiz(it, sub) {
       <div class="quiz-q ${corrected && key ? (ok ? 'ok' : 'ko') : ''}">
         <p class="quiz-prompt"><span class="qnum">${i + 1}</span> ${rich(q.prompt)}</p>
         ${input}
-        ${corrected && key ? `<p class="feedback">${ok ? mascot('zen', { mood: 'happy', anim: 'pop', size: 30 }) + ' Bonne réponse !' : `${mascot('ouch', { mood: 'ouch', anim: 'shake', size: 30 })} La bonne réponse : <strong>${esc(expectedText(q, key.answer))}</strong>`}
+        ${corrected && key ? `<p class="feedback">${ok ? icon('circle-check') + ' Bonne réponse !' : `${icon('circle-x')} La bonne réponse : <strong>${esc(expectedText(q, key.answer))}</strong>`}
           ${key.explanation ? `<br><span class="muted">${rich(key.explanation)}</span>` : ''}</p>` : ''}
       </div>`;
   }).join('');
@@ -287,7 +287,7 @@ function studentQuiz(it, sub) {
        <p class="hint">${it.instant_result ? 'Tu verras ton score et la correction juste après l’envoi.' : 'Ton prof validera tes réponses avant que tu voies le résultat.'}</p>`
     : corrected
       ? `<div class="quiz-score ${sub.score === sub.total ? 'perfect' : ''}">
-           ${mascotForScore(sub.score / sub.total, 64)}<div>${sub.score === sub.total ? 'Parfait !' : sub.score >= sub.total / 2 ? 'Pas mal !' : 'Continue tes efforts !'}<br>Score : <strong>${sub.score} / ${sub.total}</strong></div></div>`
+           ${myMascotForScore(sub.score / sub.total, 64)}<div>${sub.score === sub.total ? 'Parfait !' : sub.score >= sub.total / 2 ? 'Pas mal !' : 'Continue tes efforts !'}<br>Score : <strong>${sub.score} / ${sub.total}</strong></div></div>`
       : '';
 
   return `<article class="card s-item type-quiz ${corrected ? 'is-done' : ''}" id="item-${it.id}">${head}

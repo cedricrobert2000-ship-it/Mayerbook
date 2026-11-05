@@ -127,7 +127,7 @@ async function renderTopbar() {
     nav.innerHTML = `
       ${installButton()}
       ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
-      <span class="nav-user">${avatar(Session.student.name, 'sm')} ${esc(firstName(Session.student.name))}</span>
+      <button class="nav-user" data-action="pick-mascot" title="Changer de personnage">${myMascot() ? mascot(myMascot(), { mood: myMascot() === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 30 }) : avatar(Session.student.name, 'sm')} ${esc(firstName(Session.student.name))}</button>
       <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
   }
 }
@@ -170,6 +170,8 @@ async function route(force = false) {
 
   app.innerHTML = html;
   hydrateFiles(app);
+  // Première connexion de l'élève : il choisit son personnage
+  if (Session.role === 'student' && !myMascot() && !$('#modal').open) openMascotPicker(true);
   renderTopbar();
   document.title = 'Mayerbook';
 
@@ -192,6 +194,7 @@ const Actions = {
   'close-modal': () => Modal.close(),
   'close-modal-go': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); },
   'copy': d => copyText(d.text),
+  'pick-mascot': () => openMascotPicker(false),
   'install-app': async () => {
     if (installPrompt) {
       installPrompt.prompt();

@@ -146,3 +146,101 @@ function mascotCrew() {
 function loadingHtml() {
   return `<div class="loading"><div class="m-loader">${mascot('zen', { mood: 'happy', anim: 'hop', size: 34 })}${mascot('zap', { mood: 'happy', anim: 'hop', size: 34, cls: 'h2' })}${mascot('wow', { mood: 'wow', anim: 'hop', size: 34, cls: 'h3' })}</div></div>`;
 }
+
+/* ---------- Visage seul (dans les cartes) ---------- */
+
+const FACE = { x: 100, ey: 80, d: 36, my: 130, f: 1.35 };
+
+/** Seulement les yeux et la bouche, à poser sur une carte colorée. */
+function mascotFace(mood = 'happy', o = {}) {
+  const [eyes, mouth] = MOODS[mood] || MOODS.happy;
+  const blink = OPEN_EYES.includes(eyes) ? ' blink' : '';
+  const delay = ((mascotSeq++ * 0.37) % 2.4).toFixed(2);
+  return `<span class="m-face mascot m-${o.anim || 'bob'}" style="--s:${o.size || 150}px;--d:${delay}s" aria-hidden="true">` +
+    `<svg viewBox="0 0 200 200" focusable="false"><g class="m-all"><g class="m-eyes${blink}">${mEyes(eyes, FACE)}</g>` +
+    `<g class="m-mouth">${mMouth(mouth, FACE)}</g></g></svg></span>`;
+}
+
+function faceForProgress(p, size) {
+  if (!p.total || p.done === 0) return mascotFace('sleep', { size, anim: 'sleep' });
+  if (p.done === p.total) return mascotFace('happy', { size, anim: 'bounce' });
+  return mascotFace(p.pct >= 50 ? 'calm' : 'wink', { size });
+}
+
+function faceForScore(ratio, size) {
+  if (ratio >= 0.8) return mascotFace('proud', { size });
+  if (ratio >= 0.5) return mascotFace('wink', { size });
+  return mascotFace('worried', { size });
+}
+
+/* ---------- Personnage choisi par l'élève ---------- */
+
+const MASCOT_INFO = {
+  zen:    { name: 'Zen',    tagline: 'Toujours calme, rien ne le stresse' },
+  zap:    { name: 'Zap',    tagline: 'Plein d’énergie, rapide comme l’éclair' },
+  wow:    { name: 'Wow',    tagline: 'Curieux de tout, toujours épaté' },
+  grr:    { name: 'Grr',    tagline: 'Râleur… mais avec un grand cœur' },
+  snooze: { name: 'Snooze', tagline: 'Champion de la sieste' },
+  meh:    { name: 'Meh',    tagline: 'Un peu timide, mais très attachant' },
+  ouch:   { name: 'Ouch',   tagline: 'Un peu maladroit, jamais découragé' }
+};
+
+function myMascot() {
+  const n = typeof Session !== 'undefined' && Session?.student?.mascot;
+  return MASCOTS[n] ? n : null;
+}
+
+/** Personnage de l'élève qui réagit à un score (0 → 1). */
+function myMascotForScore(ratio, size = 64) {
+  const n = myMascot();
+  if (!n) return mascotForScore(ratio, size);
+  if (ratio >= 1) return mascot(n, { mood: 'happy', anim: 'bounce', size, label: 'Parfait !' });
+  if (ratio >= 0.7) return mascot(n, { mood: 'proud', anim: 'pop', size, label: 'Très bien' });
+  if (ratio >= 0.5) return mascot(n, { mood: 'wink', anim: 'pop', size, label: 'Pas mal' });
+  return mascot(n, { mood: 'worried', anim: 'shake', size, label: 'Continue tes efforts' });
+}
+
+function openMascotPicker(first = false) {
+  const current = myMascot();
+  const d = Modal.open(`
+    <form class="form" id="mascot-form">
+      <h2>${first ? 'Choisis ton personnage' : 'Changer de personnage'}</h2>
+      <p class="muted">${first ? 'Il t’accompagnera dans Mayerbook et réagira à ton travail.' : 'Tu peux en changer quand tu veux.'}</p>
+      <div class="mascot-grid">
+        ${Object.entries(MASCOT_INFO).map(([k, info]) => `
+          <label class="mascot-choice">
+            <input type="radio" name="mascot" value="${k}" ${k === (current || 'zen') ? 'checked' : ''}>
+            <span class="mascot-card">
+              ${mascot(k, { mood: k === 'snooze' ? 'sleep' : 'happy', anim: 'bob', size: 76 })}
+              <strong>${info.name}</strong>
+              <span class="small muted">${info.tagline}</span>
+            </span>
+          </label>`).join('')}
+      </div>
+      <p class="form-error" hidden></p>
+      <div class="form-actions">
+        ${first ? '' : '<button type="button" class="btn ghost" data-action="close-modal">Annuler</button>'}
+        <button class="btn primary">${first ? 'C’est parti !' : 'Choisir'}</button>
+      </div>
+    </form>`, { wide: true });
+  const form = $('#mascot-form', d);
+  // Le personnage sélectionné saute de joie
+  const refresh = () => $$('.mascot-choice', form).forEach(l => {
+    const on = l.querySelector('input').checked;
+    l.querySelector('.mascot').classList.toggle('m-bounce', on);
+    l.querySelector('.mascot').classList.toggle('m-bob', !on);
+  });
+  form.addEventListener('change', refresh);
+  refresh();
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const name = new FormData(form).get('mascot');
+    try {
+      await busy(form.querySelector('button.primary'), 'Enregistrement…', () => Api.setMascot(name));
+      Session.student.mascot = name;
+      Modal.close();
+      rerender();
+      toast(`${MASCOT_INFO[name].name} t’accompagne maintenant`);
+    } catch (ex) { const el = $('.form-error', d); el.textContent = ex.message; el.hidden = false; }
+  };
+}

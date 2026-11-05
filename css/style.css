@@ -971,3 +971,48 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
   .current-week .cta { position: relative; z-index: 2; }
 }
 .new-corrections h3.nc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-right: 0; margin-bottom: 4px; }
+
+/* ---------- Visages seuls dans les cartes (comme une illustration qui déborde) ---------- */
+.m-face .m-all { transform-origin: 50% 60%; }
+.card-mascot .m-face { --s: 170px !important; }
+.current-week .card-mascot, .hero.card .card-mascot { right: -26px; bottom: -40px; }
+.stat-mascot { right: -16px; bottom: -26px; }
+.stat-mascot .m-face { --s: 96px !important; }
+@media (max-width: 560px) {
+  .current-week .card-mascot .m-face, .hero.card .card-mascot .m-face { --s: 140px !important; }
+  .current-week .card-mascot, .hero.card .card-mascot { right: -30px; bottom: -42px; }
+}
+
+/* ---------- Choix du personnage ---------- */
+.mascot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.mascot-choice { cursor: pointer; }
+.mascot-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.mascot-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 18px 12px 14px; border-radius: 20px; background: var(--surface-2);
+  border: 2px solid transparent; transition: background .15s, border-color .15s, transform .15s;
+  height: 100%;
+}
+.mascot-card strong { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; }
+.mascot-choice:hover .mascot-card { transform: translateY(-2px); }
+.mascot-choice input:checked + .mascot-card { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); border-color: var(--primary); }
+.mascot-choice input:focus-visible + .mascot-card { outline: 2px solid var(--primary); outline-offset: 2px; }
+.mascot-btn, .nav-user { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.mascot-btn { vertical-align: -0.12em; margin-left: 4px; border-radius: 50%; }
+.mascot-btn:hover .mascot { transform: scale(1.08); }
+.mascot-btn .mascot { transition: transform .15s; }
+.nav-user { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; }
+.nav-user:hover { background: var(--surface-2); }
+@media (max-width: 560px) {
+  .mascot-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .mascot-card { padding: 14px 8px 12px; }
+  .mascot-card .small { font-size: .78rem; }
+  .mascot-card .mascot { --s: 62px !important; }
+  .hero.card.has-mascot { padding-bottom: 64px; }
+  .hero.card .card-mascot { bottom: -48px; }
+  .hero.card .card-mascot .m-face { --s: 130px !important; }
+}
+@media (max-width: 560px) {
+  .hero.card.has-mascot { padding-bottom: 86px; }
+  .hero.card .card-mascot { bottom: -30px; right: -22px; }
+}

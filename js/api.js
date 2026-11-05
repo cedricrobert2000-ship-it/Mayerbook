@@ -54,7 +54,7 @@ function createSupaApi(cfg) {
     const tutor = check(await sb.from('tutors').select('id').eq('id', user.id).maybeSingle());
     if (tutor) return { role: 'tutor', userId: user.id, email: user.email };
     const student = check(await sb.from('students').select('*').eq('user_id', user.id).maybeSingle());
-    if (student) return { role: 'student', userId: user.id, student };
+    if (student) return { role: 'student', userId: user.id, student: { ...student, mascot: user.user_metadata?.mascot || null } };
     return { role: 'none', userId: user.id, email: user.email };
   }
 
@@ -238,7 +238,9 @@ function createSupaApi(cfg) {
       }));
     },
     async studentSubmit(itemId) { return check(await sb.rpc('student_submit', { p_item: itemId })); },
-    async getSolution(itemId) { return check(await sb.rpc('get_solution', { p_item: itemId })) || {}; }
+    async getSolution(itemId) { return check(await sb.rpc('get_solution', { p_item: itemId })) || {}; },
+    // Personnage choisi : enregistré dans le profil du compte de l'élève (modifiable par lui seul)
+    async setMascot(name) { check(await sb.auth.updateUser({ data: { mascot: name } })); }
   };
 }
 
@@ -533,6 +535,11 @@ function createDemoApi() {
       }
       s.updated_at = now(); save();
       return clone(s);
+    },
+    async setMascot(name) {
+      const st = me();
+      st.mascot = name;
+      save();
     },
     async getSolution(itemId) {
       const { st, it } = visibleItem(itemId);
