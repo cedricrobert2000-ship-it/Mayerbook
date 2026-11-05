@@ -1120,3 +1120,51 @@ body.has-bottomnav #toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .item-card h4, .s-item h3, .s-item .content { color: var(--text); }
 .s-item .choice.right { border-color: var(--ok); background: var(--ok-soft); }
 .s-item .choice.wrong { border-color: var(--ko); }
+
+/* =========================================================
+   Barre de navigation : violet de la marque
+   ========================================================= */
+.bottomnav { background: var(--feature); }
+.bn-item { color: rgb(255 255 255 / .74); }
+.bn-item:hover { color: #fff; }
+.bn-item.active { background: #fff; color: var(--feature); }
+.bn-badge { box-shadow: 0 0 0 2px var(--feature) !important; }
+
+/* =========================================================
+   Transitions entre les pages (View Transitions API)
+   Le header et la barre du bas restent fixes, seul le contenu bouge.
+   ========================================================= */
+#app { view-transition-name: page; }
+.topbar { view-transition-name: topbar; }
+.bottomnav { view-transition-name: bottomnav; }
+
+::view-transition-group(page) { animation-duration: .38s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-old(page), ::view-transition-new(page) { height: auto; }
+
+/* Avancer (vers une page plus détaillée) */
+:root[data-nav="forward"]::view-transition-old(page) { animation: vt-out-left .22s cubic-bezier(.4, 0, 1, 1) both; }
+:root[data-nav="forward"]::view-transition-new(page) { animation: vt-in-right .38s cubic-bezier(.2, .8, .2, 1) both; }
+/* Revenir en arrière */
+:root[data-nav="back"]::view-transition-old(page) { animation: vt-out-right .22s cubic-bezier(.4, 0, 1, 1) both; }
+:root[data-nav="back"]::view-transition-new(page) { animation: vt-in-left .38s cubic-bezier(.2, .8, .2, 1) both; }
+/* Même niveau (ex. Élèves ↔ À corriger) */
+:root[data-nav="fade"]::view-transition-old(page) { animation: vt-fade-out .18s ease both; }
+:root[data-nav="fade"]::view-transition-new(page) { animation: vt-rise .34s cubic-bezier(.2, .8, .2, 1) both; }
+
+@keyframes vt-out-left  { to { opacity: 0; transform: translateX(-36px); } }
+@keyframes vt-out-right { to { opacity: 0; transform: translateX(36px); } }
+@keyframes vt-in-right  { from { opacity: 0; transform: translateX(48px); } }
+@keyframes vt-in-left   { from { opacity: 0; transform: translateX(-48px); } }
+@keyframes vt-fade-out  { to { opacity: 0; } }
+@keyframes vt-rise      { from { opacity: 0; transform: translateY(14px); } }
+
+/* Navigateurs sans View Transitions */
+#app.page-in > * { animation: vt-rise .34s cubic-bezier(.2, .8, .2, 1) both; }
+#app.page-in > *:nth-child(2) { animation-delay: .03s; }
+#app.page-in > *:nth-child(3) { animation-delay: .06s; }
+#app.page-in > *:nth-child(n+4) { animation-delay: .09s; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  #app.page-in > * { animation: none; }
+}

@@ -149,6 +149,33 @@ async function renderTopbar() {
 
 /* ---------- Navigation ---------- */
 
+/* ---------- Transitions entre les pages ---------- */
+
+const PAGE_DEPTH = { '': 0, eleve: 1, corrections: 1, semaine: 2, copie: 3 };
+function pageDepth(path) {
+  const first = (path || '/').split('/').filter(Boolean)[0] || '';
+  if (Session?.role === 'student') return first === 'semaine' ? 1 : 0;
+  return PAGE_DEPTH[first] ?? 1;
+}
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** Remplace le contenu de la page avec une transition fluide (glissé + fondu). */
+function swapPage(app, html, direction) {
+  const apply = () => { app.innerHTML = html; hydrateFiles(app); };
+  if (!direction || reduceMotion()) { apply(); return Promise.resolve(); }
+  document.documentElement.dataset.nav = direction;
+  if (document.startViewTransition) {
+    const t = document.startViewTransition(() => { apply(); window.scrollTo(0, 0); });
+    return t.finished.catch(() => {}).finally(() => { delete document.documentElement.dataset.nav; });
+  }
+  // Navigateurs sans View Transitions : simple animation d'entrée
+  apply();
+  app.classList.remove('page-in');
+  void app.offsetWidth;
+  app.classList.add('page-in');
+  return Promise.resolve();
+}
+
 async function route(force = false) {
   const seq = ++routeSeq;
   const [path, query] = (location.hash.slice(1) || '/').split('?');
@@ -163,7 +190,12 @@ async function route(force = false) {
     return;
   }
   document.body.dataset.role = Session.role;
-  if (path !== lastPath || force) app.innerHTML = loadingHtml();
+  const changed = path !== lastPath;
+  const direction = changed && lastPath !== null
+    ? (pageDepth(path) >= pageDepth(lastPath) ? (pageDepth(path) === pageDepth(lastPath) ? 'fade' : 'forward') : 'back')
+    : null;
+  let loader = null;
+  if (changed || force) loader = setTimeout(() => { if (seq === routeSeq) app.innerHTML = loadingHtml(); }, 280);
 
   let html;
   try {
@@ -181,21 +213,21 @@ async function route(force = false) {
     console.error(e);
     html = `<div class="empty card">${mascot('ouch', { mood: 'ouch', anim: 'shake', size: 90 })}<h2>Oups</h2><p>${esc(e.message)}</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
   }
+  clearTimeout(loader);
   if (seq !== routeSeq) return; // une autre navigation a eu lieu entre-temps
 
-  app.innerHTML = html;
-  hydrateFiles(app);
+  lastPath = path;
+  await swapPage(app, html, direction);
   // Première connexion de l'élève : il choisit son personnage
   if (Session.role === 'student' && !myMascot() && !$('#modal').open) openMascotPicker(true);
   renderTopbar();
   document.title = 'Mayerbook';
 
-  if (path !== lastPath) {
-    window.scrollTo(0, 0);
+  if (changed) {
+    if (!document.startViewTransition || !direction) window.scrollTo(0, 0);
     const item = new URLSearchParams(query || '').get('item');
-    if (item) setTimeout(() => $('#item-' + item)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    if (item && !$('.deck')) setTimeout(() => $('#item-' + item)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
-  lastPath = path;
 }
 
 function rerender() {
