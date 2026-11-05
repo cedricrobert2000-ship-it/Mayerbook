@@ -41,7 +41,7 @@ async function viewTutorHome() {
   if (!all.length) {
     return head + `
       <div class="empty card">
-        <div class="empty-icon">${icon('school')}</div>
+        <div class="login-crew">${mascotCrew()}</div>
         <h2>Bienvenue sur Mayerbook</h2>
         <p>Crée une fiche par élève : Mayerbook lui donne un <strong>identifiant</strong> et un <strong>code</strong>
         pour se connecter à son espace. Chaque semaine, tu lui prépares des notions, des exercices et des quiz
@@ -293,7 +293,7 @@ function tutorItemCard(it, sub, idx, count) {
 }
 
 function notFound() {
-  return `<div class="empty card"><h2>Introuvable</h2><p>Cette page n’existe pas ou a été supprimée.</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
+  return `<div class="empty card">${mascot('meh', { mood: 'worried', anim: 'wiggle', size: 90 })}<h2>Introuvable</h2><p>Cette page n’existe pas ou a été supprimée.</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
 }
 
 /* ---------- Copies à corriger ---------- */
@@ -311,9 +311,9 @@ async function viewTutorCorrections() {
     </a>`).join('');
   return `
     <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mes élèves</a></nav>
-    <div class="page-head"><div><h1>À corriger</h1>
-      <p class="muted">${list.length ? plural(list.length, 'copie envoyée', 'copies envoyées') + ' par tes élèves' : 'Tout est corrigé, bravo !'}</p></div></div>
-    ${rows || '<div class="empty card"><div class="empty-icon">' + icon('circle-check') + '</div><p>Aucune copie en attente.</p></div>'}`;
+    <div class="page-head"><div class="inline-mascot">${list.length ? mascot('grr', { mood: 'angry', anim: 'wiggle', size: 58 }) : mascot('zen', { mood: 'proud', anim: 'bounce', size: 58 })}<div><h1>À corriger</h1>
+      <p class="muted">${list.length ? plural(list.length, 'copie envoyée', 'copies envoyées') + ' par tes élèves' : 'Tout est corrigé, bravo !'}</p></div></div></div>
+    ${rows || '<div class="empty card">' + mascot('zap', { mood: 'happy', anim: 'bounce', size: 96 }) + '<p>Aucune copie en attente. Tu peux souffler !</p></div>'}`;
 }
 
 async function viewTutorCopy(subId) {
@@ -493,7 +493,7 @@ function showLoginInfo(student, code) {
   const text = loginInstructions(student.username, code);
   Modal.open(`
     <div class="form">
-      <h2>${icon('party-popper')} ${esc(student.name)} a son compte</h2>
+      <h2 class="inline-mascot">${mascot('zap', { mood: 'happy', anim: 'bounce', size: 52 })}<span>${esc(student.name)} a son compte</span></h2>
       <p>Donne-lui ces informations pour se connecter (sur téléphone, tablette ou ordinateur) :</p>
       <div class="login-card">
         <p>Identifiant <code class="big-code">${esc(student.username)}</code></p>
@@ -587,7 +587,7 @@ function openNextWeekForm() {
         ${opt('notions', notions, 'Notions pas encore comprises')}
         ${opt('exos', exos, 'Exercices non rendus ou non corrigés')}
         ${opt('quizzes', quizzes, 'Quiz non réussis à 100 %')}
-      </fieldset>` : '<p class="notice ok">' + icon('party-popper') + ' Tout est acquis ! La nouvelle semaine sera vide.</p>'}
+      </fieldset>` : '<p class="notice ok inline-mascot">' + mascot('zen', { mood: 'proud', anim: 'pop', size: 40 }) + '<span>Tout est acquis ! La nouvelle semaine sera vide.</span></p>'}
       <div class="form-actions">
         <button type="button" class="btn ghost" data-action="close-modal">Annuler</button>
         <button class="btn primary">Créer la semaine</button>

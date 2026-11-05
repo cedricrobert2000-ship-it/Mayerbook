@@ -15,7 +15,7 @@ function viewLogin(tab = 'eleve') {
   return `
     <div class="login">
       <div class="login-brand">
-        <div class="login-logo">${icon('book-open')}</div>
+        <div class="login-crew">${mascotCrew()}</div>
         <h1>Mayerbook</h1>
         <p class="muted">Le suivi de tes cours particuliers, semaine après semaine.</p>
       </div>
@@ -164,7 +164,7 @@ async function route(force = false) {
     }
   } catch (e) {
     console.error(e);
-    html = `<div class="empty card"><h2>Oups</h2><p>${esc(e.message)}</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
+    html = `<div class="empty card">${mascot('ouch', { mood: 'ouch', anim: 'shake', size: 90 })}<h2>Oups</h2><p>${esc(e.message)}</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
   }
   if (seq !== routeSeq) return; // une autre navigation a eu lieu entre-temps
 
