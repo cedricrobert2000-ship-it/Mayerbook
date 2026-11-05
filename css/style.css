@@ -1168,3 +1168,10 @@ body.has-bottomnav #toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   #app.page-in > * { animation: none; }
 }
+
+/* Barre de navigation sobre : noire en clair, blanche en sombre ; seul l onglet actif est violet */
+.bottomnav { background: var(--text); }
+.bn-item { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+.bn-item:hover { color: var(--bg); }
+.bn-item.active { background: var(--feature); color: #fff; }
+.bn-badge { box-shadow: 0 0 0 2px var(--text) !important; }
