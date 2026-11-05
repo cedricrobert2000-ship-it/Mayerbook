@@ -747,3 +747,99 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 /* Filtres : pilules sans bordure */
 .chip { border-color: transparent; background: var(--surface-2); }
 .chip.active { border-color: var(--text); }
+
+/* =========================================================
+   v3 — Aucune ombre, couleurs pastel vives (cours, chiffres…)
+   ========================================================= */
+*, *::before, *::after { box-shadow: none !important; }
+
+:root {
+  --c-lime: #bdf5a1;
+  --c-orange: #ffad7e;
+  --c-lilac: #d8bcff;
+  --c-pink: #ffb8e6;
+  --c-yellow: #ffe680;
+  --c-sky: #a9d6ff;
+  --c-coral: #ff9e93;
+  --ink: #141216;
+}
+
+/* Header : nom en capitales, sans émoji */
+.brand { text-transform: uppercase; letter-spacing: .02em; font-size: 1.25rem; }
+.brand-icon { display: none; }
+
+/* Couleur de chaque type de contenu */
+.type-notion   { --card: var(--c-yellow); }
+.type-exercice { --card: var(--c-lilac); }
+.type-quiz     { --card: var(--c-sky); }
+
+/* Cartes colorées : fond pastel plein, texte foncé, en clair comme en sombre.
+   On redéfinit les couleurs « locales » pour que tout le contenu reste lisible. */
+.item-card, .s-item, .stat-row .card, .current-week, .hero.card,
+.new-corrections, .ai-card, .publish-card.is-published {
+  background: var(--card) !important;
+  color: var(--ink);
+  --text: #141216;
+  --muted: rgb(20 18 22 / .66);
+  --surface: rgb(255 255 255 / .62);
+  --surface-2: rgb(255 255 255 / .5);
+  --bg: rgb(255 255 255 / .75);
+  --border: rgb(20 18 22 / .14);
+  --primary: #141216;
+  --primary-ink: #ffffff;
+  --primary-soft: rgb(255 255 255 / .55);
+}
+.s-item.is-done { --card: var(--c-lime); }
+.item-card h4, .s-item h3, .s-item .content { color: var(--ink); }
+
+/* Carte vedette « Cette semaine » et en-tête de semaine : vert pastel */
+.current-week, .hero.card { --card: var(--c-lime); }
+.current-week .muted, .hero.card .muted, .current-week .todo, .hero.card .hero-progress-label { color: rgb(20 18 22 / .7); }
+.current-week h2, .hero.card h1 { color: var(--ink); }
+.current-week .teacher-msg, .hero.card .teacher-msg { background: rgb(255 255 255 / .55); color: var(--ink); }
+.current-week .teacher-msg span, .hero.card .teacher-msg span { color: rgb(20 18 22 / .7); }
+.current-week .progress, .hero.card .progress { background: rgb(20 18 22 / .12); }
+.current-week .progress-fill, .hero.card .progress-fill { background: var(--ink); }
+.current-week .cheer, .hero.card .cheer { color: var(--ink); }
+.current-week:hover { transform: translateY(-2px); }
+
+/* Chiffres « Mon suivi » / fiche élève */
+.stat-row .card:nth-child(1) { --card: var(--c-orange); }
+.stat-row .card:nth-child(2) { --card: var(--c-lilac); }
+.stat-row .card:nth-child(3) { --card: var(--c-lime); }
+
+/* Autres cartes de couleur */
+.new-corrections { --card: var(--c-orange); }
+.new-corrections .corr-link { background: rgb(255 255 255 / .6); color: var(--ink); }
+.ai-card { --card: var(--c-lilac); }
+.publish-card.is-published { --card: var(--c-lime); }
+
+/* Éléments dans les cartes colorées */
+.item-card .tag, .s-item .tag { background: rgb(255 255 255 / .7); color: var(--ink); }
+.s-item .toggle { border-color: rgb(20 18 22 / .3); color: var(--ink); }
+.s-item .toggle.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.s-item .choice { background: rgb(255 255 255 / .75); border-color: transparent; }
+.s-item .choice.picked { border-color: var(--ink); }
+.s-item .choice.right { background: #e3ffd6; border-color: #2f9e44; }
+.s-item .choice.wrong { border-color: #d6336c; }
+.s-item .quiz-q { background: rgb(255 255 255 / .45); }
+.s-item .quiz-q.ok { background: #e3ffd6; }
+.s-item .quiz-q.ko { background: #ffe1e8; }
+.s-item .qnum { background: var(--ink); color: #fff; }
+.s-item .sent-box, .s-item .feedback-box { background: rgb(255 255 255 / .6); border: 0; }
+.s-item details.correction { background: rgb(255 255 255 / .6); border: 0; }
+.s-item details.correction summary, .s-item .resource { color: var(--ink); }
+.item-card .status, .s-item .status { background: rgb(255 255 255 / .7); }
+
+/* Étiquettes de matière : pastels vifs (identiques en clair et en sombre) */
+.tag[data-s="maths"]    { --tag-bg: var(--c-sky);    --tag-fg: #141216; }
+.tag[data-s="francais"] { --tag-bg: var(--c-pink);   --tag-fg: #141216; }
+.tag[data-s="philo"]    { --tag-bg: var(--c-lilac);  --tag-fg: #141216; }
+.tag[data-s="svt"]      { --tag-bg: var(--c-lime);   --tag-fg: #141216; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tag[data-s="maths"]    { --tag-bg: var(--c-sky);   --tag-fg: #141216; }
+  :root:not([data-theme="light"]) .tag[data-s="francais"] { --tag-bg: var(--c-pink);  --tag-fg: #141216; }
+  :root:not([data-theme="light"]) .tag[data-s="philo"]    { --tag-bg: var(--c-lilac); --tag-fg: #141216; }
+  :root:not([data-theme="light"]) .tag[data-s="svt"]      { --tag-bg: var(--c-lime);  --tag-fg: #141216; }
+  :root:not([data-theme="light"]) { --tag-l: 82%; --tag-ink-l: 18%; }
+}
