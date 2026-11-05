@@ -46,6 +46,22 @@ function buildCreationPrompt(p) {
   ]
 }`
     },
+    mixte: {
+      ask: `Prépare une séance complète : 1 ou 2 fiches « notion à revoir » (rappel de cours avec un exemple), ` +
+        `${p.count} exercice(s) (énoncé complet + correction détaillée étape par étape pour moi) ` +
+        `et 1 quiz de 6 à 10 questions en variant les types : "qcm" (3 ou 4 choix), "vf" (vrai/faux) et "texte" (réponse courte : un nombre ou un mot, sans ambiguïté).`,
+      json: `{
+  "elements": [
+    { "type": "notion", "title": "Nom de la notion", "content": "Rappel de cours avec un exemple" },
+    { "type": "exercice", "title": "Titre court", "content": "Énoncé complet", "model_answer": "Correction détaillée" },
+    { "type": "quiz", "title": "Titre du quiz", "intro": "Consigne courte (peut être vide)", "questions": [
+      { "type": "qcm", "prompt": "Question ?", "options": ["Choix A", "Choix B", "Choix C"], "correct_option": 1, "answer_text": "", "explanation": "Pourquoi" },
+      { "type": "vf", "prompt": "Affirmation.", "options": ["Vrai", "Faux"], "correct_option": 0, "answer_text": "", "explanation": "Pourquoi" },
+      { "type": "texte", "prompt": "Combien font 6 × 7 ?", "options": [], "correct_option": -1, "answer_text": "42|quarante-deux", "explanation": "" }
+    ] }
+  ]
+}`
+    },
     quiz: {
       ask: `Crée un quiz de ${p.count} question(s), en variant les types : "qcm" (3 ou 4 choix), "vf" (vrai/faux) et "texte" (réponse courte : un nombre ou un mot, sans ambiguïté).`,
       json: `{
@@ -66,15 +82,22 @@ function buildCreationPrompt(p) {
   return `${ctx}\n\n${f.ask}\n\n` +
     `Réponds UNIQUEMENT avec un bloc de code JSON valide, sans texte avant ni après, exactement dans ce format :\n` +
     '```json\n' + f.json + '\n```' +
-    (p.type === 'quiz' ? '\n"correct_option" est la position de la bonne réponse en partant de 0. Pour "texte", mets les réponses acceptées dans "answer_text", séparées par |.' : '');
+    (p.type === 'quiz' || p.type === 'mixte' ? '\n"correct_option" est la position de la bonne réponse en partant de 0. Pour "texte", mets les réponses acceptées dans "answer_text", séparées par |.' : '');
 }
 
-/** Extrait et lit le JSON collé (tolère les blocs ```json, le texte autour, les guillemets typographiques). */
+/**
+ * Extrait et lit le JSON collé (tolère les blocs ```json, le texte autour, les guillemets typographiques).
+ * Accepte un seul type ({"type":"exercice","items":[…]}, {"type":"quiz","quiz":{…}})
+ * ou un mélange ({"elements":[…]}, {"exercices":[…],"quiz":{…},"notions":[…]}, ou une liste).
+ * Renvoie { entries: [...] }.
+ */
 function parseAiReply(text, expectedType) {
   let t = String(text || '').trim();
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) t = fence[1];
-  const start = t.indexOf('{'), end = t.lastIndexOf('}');
+  const starts = [t.indexOf('{'), t.indexOf('[')].filter(i => i >= 0);
+  const start = starts.length ? Math.min(...starts) : -1;
+  const end = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
   if (start < 0 || end < start) throw new Error('Je ne trouve pas de JSON dans le texte collé. Copie bien toute la réponse de l’IA.');
   t = t.slice(start, end + 1)
     .replace(/[“”]/g, '"')
@@ -83,24 +106,41 @@ function parseAiReply(text, expectedType) {
   try { data = JSON.parse(t); }
   catch { throw new Error('Le JSON collé est incomplet ou abîmé. Redemande à l’IA de répondre « uniquement avec le JSON ».'); }
 
-  // Tolère les variantes : liste directe, quiz sans enveloppe…
-  if (Array.isArray(data)) data = { items: data };
-  let type = data.type || expectedType;
-  if (!data.quiz && Array.isArray(data.questions)) { data = { quiz: data }; type = 'quiz'; }
-  if (type === 'quiz') {
-    if (!data.quiz?.questions?.length) throw new Error('Aucune question trouvée dans la réponse.');
-    return { type: 'quiz', quiz: data.quiz };
-  }
-  const items = (data.items || data.exercices || data.notions || []).filter(x => x && (x.title || x.content));
-  if (!items.length) throw new Error('Aucun élément trouvé dans la réponse.');
-  return {
-    type: type === 'notion' ? 'notion' : 'exercice',
-    items: items.map(x => ({
+  const entries = [];
+  const itemType = expectedType === 'notion' ? 'notion' : 'exercice';
+  const push = (x, fallback) => {
+    if (!x || typeof x !== 'object') return;
+    const type = x.type || fallback;
+    if (type === 'quiz' || Array.isArray(x.questions) || x.quiz) {
+      const q = x.quiz || x;
+      if (Array.isArray(q.questions) && q.questions.length) {
+        entries.push({ type: 'quiz', subject: x.subject || q.subject, title: q.title || x.title, intro: q.intro || q.content || '', questions: q.questions });
+      }
+      return;
+    }
+    if (!(x.title || x.titre || x.content || x.enonce)) return;
+    entries.push({
+      type: type === 'notion' ? 'notion' : 'exercice',
+      subject: x.subject || x.matiere,
       title: String(x.title || x.titre || 'Sans titre'),
       content: String(x.content || x.enonce || x.contenu || ''),
       model_answer: String(x.model_answer || x.correction || '')
-    }))
+    });
   };
+
+  if (Array.isArray(data)) data.forEach(x => push(x, itemType));
+  else {
+    (data.elements || data.éléments || []).forEach(x => push(x, itemType));
+    const itemsType = data.type === 'notion' ? 'notion' : data.type === 'exercice' ? 'exercice' : itemType;
+    (data.items || []).forEach(x => push(x, itemsType));
+    (data.notions || []).forEach(x => push(x, 'notion'));
+    (data.exercices || []).forEach(x => push(x, 'exercice'));
+    if (data.quiz) push({ ...data.quiz, type: 'quiz' }, 'quiz');
+    (data.quizzes || data.quizs || []).forEach(q => push({ ...q, type: 'quiz' }, 'quiz'));
+    if (!entries.length && Array.isArray(data.questions)) push({ ...data, type: 'quiz' }, 'quiz');
+  }
+  if (!entries.length) throw new Error('Aucun exercice, quiz ou notion trouvé dans la réponse.');
+  return { entries };
 }
 
 /* ---------- Fenêtre « Créer avec l'IA » ---------- */
@@ -122,6 +162,7 @@ function openAiDialog() {
           <label><input type="radio" name="type" value="exercice" checked><span>✏️ Exercices</span></label>
           <label><input type="radio" name="type" value="quiz"><span>❓ Quiz</span></label>
           <label><input type="radio" name="type" value="notion"><span>💡 Notions</span></label>
+          <label><input type="radio" name="type" value="mixte"><span>📦 Séance complète</span></label>
         </div>
       </fieldset>
       <div class="row">
@@ -179,7 +220,7 @@ function openAiDialog() {
       lastType = p.type;
       p.count = Number(form.elements.count.value);
     }
-    $('#count-label', d).textContent = { exercice: 'Nombre d’exercices', quiz: 'Nombre de questions', notion: 'Nombre de notions' }[p.type];
+    $('#count-label', d).textContent = { exercice: 'Nombre d’exercices', quiz: 'Nombre de questions', notion: 'Nombre de notions', mixte: 'Nombre d’exercices' }[p.type];
     $('#ai-prompt', d).value = buildCreationPrompt(p);
   };
   form.addEventListener('input', e => { if (e.target.name !== 'reply') sync(); });
@@ -197,14 +238,14 @@ function openAiDialog() {
       errEl.textContent = ex.message; errEl.hidden = false; return;
     }
     AI.params = p;
-    AI.file = AI.result.type === 'quiz' ? null : (form.elements.file.files[0] || null);
+    AI.file = AI.result.entries.some(x => x.type !== 'quiz') ? (form.elements.file.files[0] || null) : null;
     AI.uploaded = null;
     showAiPreview();
   };
 }
 
 /** Convertit un quiz importé en élément + corrigé. */
-function quizToItem(q) {
+function quizToItem(q, subject) {
   const questions = [], answers = {};
   (q.questions || []).forEach((x, i) => {
     const id = 'q' + (i + 1);
@@ -217,18 +258,18 @@ function quizToItem(q) {
     };
   });
   return {
-    item: { type: 'quiz', subject: AI.params.subject, title: q.title || 'Quiz', content: q.intro || '', questions, instant_result: true },
+    item: { type: 'quiz', subject: subject || AI.params.subject, title: q.title || 'Quiz', content: q.intro || '', questions, instant_result: true },
     key: { answers, model_answer: '' }
   };
 }
 
 function aiPresets() {
-  const r = AI.result;
-  if (r.type === 'quiz') return [quizToItem(r.quiz)];
-  return r.items.map(x => ({
-    item: { type: r.type, subject: AI.params.subject, title: x.title, content: x.content, answer_mode: 'les_deux', share_model: true },
-    key: { answers: {}, model_answer: x.model_answer || '' }
-  }));
+  return AI.result.entries.map(x => x.type === 'quiz'
+    ? quizToItem(x, x.subject)
+    : {
+      item: { type: x.type, subject: x.subject || AI.params.subject, title: x.title, content: x.content, answer_mode: 'les_deux', share_model: true },
+      key: { answers: {}, model_answer: x.model_answer || '' }
+    });
 }
 
 function showAiPreview() {
@@ -249,7 +290,7 @@ function showAiPreview() {
     return `
       <div class="card ai-preview type-${it.type}">
         <div class="ai-preview-head">
-          <label class="check"><input type="checkbox" data-ai-pick="${i}" checked> <strong>${esc(it.title)}</strong></label>
+          <label class="check"><input type="checkbox" data-ai-pick="${i}" checked> <span>${TYPES[it.type].icon}</span> <strong>${esc(it.title)}</strong></label>
           <button type="button" class="btn small ghost" data-action="ai-edit" data-index="${i}">✎ Modifier puis ajouter</button>
         </div>
         ${body}
@@ -263,7 +304,7 @@ function showAiPreview() {
       <div class="ai-results">${cards}</div>
       <div class="form-actions">
         <button type="button" class="btn ghost" data-action="open-ai">↺ Recommencer</button>
-        <button type="button" class="btn primary" data-action="ai-add">Ajouter ${AI.result.type === 'quiz' ? 'le quiz' : 'la sélection'} à la semaine</button>
+        <button type="button" class="btn primary" data-action="ai-add">Ajouter la sélection à la semaine</button>
       </div>
     </div>`, { wide: true });
 }
