@@ -576,3 +576,54 @@ body[data-role="student"] .container { max-width: 780px; }
   .page-head h1 { font-size: 1.5rem; }
   .hero h1 { font-size: 1.7rem; }
 }
+
+/* =========================================================
+   Espacements alignés sur le design system Figma
+   (grille de 4 / 8 px — page « Design system » du fichier Figma)
+   ========================================================= */
+:root {
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+}
+
+/* Bouton : Normal 16 px, Petit 8 px, espace icône/texte 6 px */
+.btn { padding: var(--space-4); gap: 6px; line-height: 1.2; }
+.btn.small { padding: var(--space-2); }
+.btn.big { padding: var(--space-4) var(--space-6); }
+
+/* Étiquette matière, statut, pastille : 4 × 8 px */
+.tag, .status { padding: var(--space-1) var(--space-2); }
+.pill { padding: var(--space-1) var(--space-2); }
+
+/* Champ : libellé → saisie 8 px, saisie 8 × 12 px */
+.field { gap: var(--space-2); }
+input:not([type=checkbox]):not([type=radio]), select, textarea { padding: var(--space-2) var(--space-3); }
+
+/* Barre du haut : liens 6 × 12 px, espacement 8 px */
+.topnav { gap: var(--space-2); }
+.nav-link { padding: 6px var(--space-3); }
+
+/* Cartes : 16 px partout, 16 px entre les cartes */
+.card { padding: var(--space-4); margin-bottom: var(--space-4); }
+.grid { gap: var(--space-4); }
+.stat-row { margin-bottom: var(--space-4); }
+.student-card { gap: var(--space-2); }
+
+/* Carte élément (prof) : contenu 16 px, outils 12 × 8 px */
+.item-card { padding: var(--space-4) var(--space-2) var(--space-4) var(--space-4); }
+.item-card-main { display: flex; flex-direction: column; gap: var(--space-2); }
+.item-card-main h4, .item-card-main p { margin: 0; }
+.item-card-tools { padding: var(--space-1) 0; gap: 2px; }
+
+/* Interactions élève : « J'ai compris » et choix de quiz 16 px, espace 8 px */
+.toggle { padding: var(--space-4); }
+.choice { padding: var(--space-4); gap: var(--space-2); }
+.choices { gap: var(--space-2); }
+
+/* Fichier joint : 8 × 12 px, espace 8 px */
+.file { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+
+/* Encadrés (message du prof, correction, envoyé, à refaire) : 16 px, espace 4 px */
+.teacher-msg, .feedback-box, .sent-box, .notice { padding: var(--space-4); }
+.teacher-msg span { margin-bottom: var(--space-1); }
+.feedback-head { margin-bottom: var(--space-1); }
+.item-section .section-head h2 { margin: 0; }

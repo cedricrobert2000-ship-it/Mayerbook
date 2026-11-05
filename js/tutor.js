@@ -267,7 +267,7 @@ function tutorItemCard(it, sub, idx, count) {
   }
   const meta = it.type === 'quiz'
     ? `${plural(it.questions?.length || 0, 'question')} · ${it.instant_result ? 'score affiché à l’envoi' : 'score après ta validation'}`
-    : truncate(it.content, 140);
+    : truncate(String(it.content || '').replace(/\*\*/g, ''), 140);
   const extras = [
     it.attachments?.length ? `📎 ${plural(it.attachments.length, 'fichier')}` : '',
     it.type === 'exercice' ? ANSWER_MODES[it.answer_mode] : '',
