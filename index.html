@@ -2,13 +2,23 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f7f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mayerbook">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="application-name" content="Mayerbook">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>Mayerbook</title>
   <meta name="description" content="Suivi hebdomadaire des élèves : notions à revoir, exercices, quiz et corrections.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23604b9f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7v14' /> <path d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z' /></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="preload" href="fonts/paytone-one-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="css/style.css?v=202611051421">
+  <link rel="stylesheet" href="css/style.css?v=202611051453">
 </head>
 <body data-role="login">
   <header class="topbar">
@@ -21,20 +31,20 @@
   <dialog id="modal"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/config.js?v=202611051421"></script>
+  <script src="js/config.js?v=202611051453"></script>
   <script>
     // Charge Supabase seulement si l'application est configurée (sinon : mode démo)
     if (window.MAYERBOOK_CONFIG.supabaseUrl) {
       document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"><\/script>');
     }
   </script>
-  <script src="js/icons.js?v=202611051421"></script>
-  <script src="js/utils.js?v=202611051421"></script>
-  <script src="js/demo.js?v=202611051421"></script>
-  <script src="js/api.js?v=202611051421"></script>
-  <script src="js/tutor.js?v=202611051421"></script>
-  <script src="js/ai.js?v=202611051421"></script>
-  <script src="js/student.js?v=202611051421"></script>
-  <script src="js/app.js?v=202611051421"></script>
+  <script src="js/icons.js?v=202611051453"></script>
+  <script src="js/utils.js?v=202611051453"></script>
+  <script src="js/demo.js?v=202611051453"></script>
+  <script src="js/api.js?v=202611051453"></script>
+  <script src="js/tutor.js?v=202611051453"></script>
+  <script src="js/ai.js?v=202611051453"></script>
+  <script src="js/student.js?v=202611051453"></script>
+  <script src="js/app.js?v=202611051453"></script>
 </body>
 </html>

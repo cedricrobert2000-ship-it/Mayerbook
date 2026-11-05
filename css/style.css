@@ -866,3 +866,21 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 .icon.wave { color: #f2b705; transform-origin: 70% 80%; animation: wave 1.6s ease-in-out 1; }
 @keyframes wave { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(16deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(12deg); } }
 @media (prefers-reduced-motion: reduce) { .icon.wave { animation: none; } }
+
+/* =========================================================
+   App installée (PWA) : plein écran, encoches et barres système
+   ========================================================= */
+.topbar {
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-left: max(16px, calc((100% - 1100px) / 2), env(safe-area-inset-left));
+  padding-right: max(16px, calc((100% - 1100px) / 2), env(safe-area-inset-right));
+}
+.container { padding-bottom: max(64px, calc(24px + env(safe-area-inset-bottom))); }
+#toast { bottom: max(24px, calc(12px + env(safe-area-inset-bottom))); }
+.install-btn { background: var(--c-lilac) !important; color: var(--ink) !important; }
+.install-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.install-steps .icon { vertical-align: -0.2em; }
+@media (display-mode: standalone) {
+  body { overscroll-behavior-y: none; }
+  .topbar { -webkit-user-select: none; user-select: none; }
+}

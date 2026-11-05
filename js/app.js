@@ -96,19 +96,36 @@ async function doLogin(form, fn) {
 
 /* ---------- Barre du haut ---------- */
 
+/* ---------- App installable (PWA) ---------- */
+
+let installPrompt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installButton() {
+  if (isStandalone() || (!installPrompt && !isIOS())) return '';
+  return `<button class="btn small install-btn" data-action="install-app">${icon('download')} Installer l’app</button>`;
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; renderTopbar(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; renderTopbar(); toast('Mayerbook est installée'); });
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
 async function renderTopbar() {
   const nav = $('#topnav');
-  if (!Session) { nav.innerHTML = Api.mode === 'demo' ? '<span class="pill">Mode démo</span>' : ''; return; }
+  if (!Session) { nav.innerHTML = installButton() + (Api.mode === 'demo' ? '<span class="pill">Mode démo</span>' : ''); return; }
   if (Session.role === 'tutor') {
     let n = 0;
     try { n = (await Api.listToCorrect()).length; } catch { /* ignore */ }
     nav.innerHTML = `
+      ${installButton()}
       ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
       <a href="#/" class="nav-link">Élèves</a>
       <a href="#/corrections" class="nav-link">À corriger${n ? ` <span class="count-badge">${n}</span>` : ''}</a>
       <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
   } else {
     nav.innerHTML = `
+      ${installButton()}
       ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
       <span class="nav-user">${avatar(Session.student.name, 'sm')} ${esc(firstName(Session.student.name))}</span>
       <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
@@ -175,6 +192,27 @@ const Actions = {
   'close-modal': () => Modal.close(),
   'close-modal-go': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); },
   'copy': d => copyText(d.text),
+  'install-app': async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice.catch(() => {});
+      installPrompt = null;
+      renderTopbar();
+      return;
+    }
+    Modal.open(`
+      <div class="form">
+        <h2>${icon('download')} Installer Mayerbook</h2>
+        <p>Sur iPhone et iPad, l’installation se fait depuis <strong>Safari</strong> :</p>
+        <ol class="install-steps">
+          <li>Touche le bouton <strong>Partager</strong> ${icon('share')} en bas de l’écran.</li>
+          <li>Choisis <strong>Sur l’écran d’accueil</strong> ${icon('square-plus')}.</li>
+          <li>Touche <strong>Ajouter</strong> : l’icône Mayerbook apparaît avec tes autres apps.</li>
+        </ol>
+        <p class="hint">Ouvre ensuite Mayerbook depuis cette icône : elle s’affiche en plein écran, sans barre de navigation.</p>
+        <div class="form-actions"><button type="button" class="btn primary" data-action="close-modal">J’ai compris</button></div>
+      </div>`);
+  },
 
   // Connexion
   'login-tab': (d, el) => { $('#app').innerHTML = viewLogin(el.value); bindLogin(); },
