@@ -9,13 +9,14 @@
 :root {
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-display: 'Paytone One', 'Inter', system-ui, sans-serif;
-  --bg: #f6f5f1;
-  --surface: #ffffff;
+  --bg: #ffffff;              /* Figma fond/page */
+  --surface: #f7f7f7;         /* Figma fond/carte */
   --surface-2: #f1efe9;
   --border: #e3e0d8;
-  --text: #1f2328;
+  --text: #141216;            /* Figma texte/principal */
+  --text-inverse: #f6f5f1;    /* Figma texte/inverse */
   --muted: #6b6f76;
-  --primary: #3b5bdb;
+  --primary: #604b9f;         /* Figma marque/principal */
   --primary-ink: #ffffff;
   --primary-soft: #e8edff;
   --ok: #2f9e44;
@@ -37,11 +38,12 @@
     --surface: #1e2126;
     --surface-2: #262a31;
     --border: #343941;
-    --text: #e8e9eb;
+    --text: #ecebef;
+    --text-inverse: #141216;
     --muted: #9aa0a8;
-    --primary: #7c94ff;
+    --primary: #a796e6;
     --primary-ink: #0f1424;
-    --primary-soft: #262f52;
+    --primary-soft: #2b2545;
     --ok: #51cf66;
     --ok-soft: #1d3324;
     --mid: #ffa94d;
@@ -179,7 +181,7 @@ body.student-mode .container { max-width: 760px; }
   border: 1px solid var(--border); background: var(--surface);
   color: var(--text); font: inherit; font-size: .85rem; cursor: pointer;
 }
-.chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chip.active { background: var(--text); color: var(--text-inverse); border-color: var(--text); }
 
 /* ---------- Tags, badges, avatars ---------- */
 
@@ -187,13 +189,13 @@ body.student-mode .container { max-width: 760px; }
 .tag {
   display: inline-block; padding: 2px 9px; border-radius: 999px;
   font-size: .76rem; font-weight: 600;
-  background: hsl(var(--h) 70% var(--tag-l));
-  color: hsl(var(--h) 60% var(--tag-ink-l));
+  background: var(--tag-bg, hsl(var(--h) 70% var(--tag-l)));
+  color: var(--tag-fg, hsl(var(--h) 60% var(--tag-ink-l)));
 }
 .badge {
   display: inline-block; padding: 2px 9px; border-radius: 6px;
   font-size: .78rem; font-weight: 700;
-  background: var(--text); color: var(--bg);
+  background: var(--text); color: var(--text-inverse);
 }
 .pill { font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 
@@ -407,7 +409,7 @@ details.correction .content { margin: 8px 0 0; }
   position: fixed; left: 50%; bottom: 24px; z-index: 100;
   transform: translate(-50%, 20px);
   padding: 10px 18px; border-radius: 999px;
-  background: var(--text); color: var(--bg);
+  background: var(--text); color: var(--text-inverse);
   font-size: .92rem; font-weight: 600;
   opacity: 0; pointer-events: none;
   transition: opacity .2s, transform .2s;
@@ -526,7 +528,7 @@ details.card > .content { margin-top: 10px; }
 /* Espace élève */
 .hero > h1 { margin-bottom: 4px; }
 .current-week { display: block; text-decoration: none; color: inherit; border: 2px solid var(--primary); }
-.current-week:hover { box-shadow: 0 6px 24px rgb(59 91 219 / .15); }
+.current-week:hover { box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 18%, transparent); }
 .current-week h2 { font-size: 1.4rem; margin: 2px 0 8px; }
 .current-week .btn { margin-top: 12px; }
 .todo { margin: 10px 0 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
@@ -627,3 +629,15 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { padding: var(--
 .teacher-msg span { margin-bottom: var(--space-1); }
 .feedback-head { margin-bottom: var(--space-1); }
 .item-section .section-head h2 { margin: 0; }
+
+/* Couleurs des matières (variables Figma matiere/…) */
+.tag[data-s="maths"]    { --tag-bg: #c2dfec; --tag-fg: #09222c; }
+.tag[data-s="francais"] { --tag-bg: #dbc2ec; --tag-fg: #381837; }
+.tag[data-s="philo"]    { --tag-bg: #c2ecc2; --tag-fg: #212811; }
+.tag[data-s="svt"]      { --tag-bg: #caecc2; --tag-fg: #0b1c10; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tag[data-s="maths"]    { --tag-bg: #16323e; --tag-fg: #c2dfec; }
+  :root:not([data-theme="light"]) .tag[data-s="francais"] { --tag-bg: #33213f; --tag-fg: #dbc2ec; }
+  :root:not([data-theme="light"]) .tag[data-s="philo"]    { --tag-bg: #1d3a1d; --tag-fg: #c2ecc2; }
+  :root:not([data-theme="light"]) .tag[data-s="svt"]      { --tag-bg: #213a1d; --tag-fg: #caecc2; }
+}

@@ -74,7 +74,8 @@ function subjectHue(subject) {
 
 function subjectTag(subject) {
   if (!subject) return '';
-  return `<span class="tag" style="--h:${subjectHue(subject)}">${esc(subject)}</span>`;
+  const key = { 'Mathématiques': 'maths', 'Français': 'francais', 'Philosophie': 'philo', 'SVT': 'svt' }[subject] || '';
+  return `<span class="tag" data-s="${key}" style="--h:${subjectHue(subject)}">${esc(subject)}</span>`;
 }
 
 function initials(name) {
