@@ -293,10 +293,16 @@ async function busy(btn, label, fn) {
   finally { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = old; } }
 }
 
-function progressBar(p, { small = false } = {}) {
-  return `<div class="progress ${small ? 'small' : ''}" role="progressbar" aria-valuenow="${p.pct}" aria-valuemin="0" aria-valuemax="100">
-    <div class="progress-fill" style="width:${p.pct}%"></div>
+function progressBar(p, { small = false, big = false, color = '' } = {}) {
+  return `<div class="progress ${small ? 'small' : ''} ${big ? 'big' : ''}" role="progressbar" aria-valuenow="${p.pct}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-fill ${p.pct >= 100 ? 'full' : ''}" style="width:${p.pct}%;${color ? `--fill:${color}` : ''}"></div>
   </div>`;
+}
+
+/** Couleur pastel d'une matière (mêmes couleurs que les étiquettes). */
+function subjectColor(subject) {
+  const known = { 'Mathématiques': 'var(--c-sky)', 'Français': 'var(--c-pink)', 'Philosophie': 'var(--c-lilac)', 'SVT': 'var(--c-lime)' };
+  return known[subject] || `hsl(${subjectHue(subject)} 75% 78%)`;
 }
 
 function loadingHtml() {

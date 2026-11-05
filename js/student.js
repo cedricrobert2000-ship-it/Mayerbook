@@ -95,8 +95,10 @@ async function viewStudentHome() {
         <div class="subject-rows">${Object.entries(bySubject).map(([k, b]) => {
           const p = { pct: Math.round(100 * b.done / b.total) };
           const avg = b.qs.length ? Math.round(100 * b.qs.reduce((a, x) => a + x, 0) / b.qs.length) : null;
-          return `<div class="subject-row">${subjectTag(k)}<div class="grow">${progressBar(p, { small: true })}</div>
-            <span class="small">${b.done}/${b.total}${avg === null ? '' : ` · quiz ${avg}%`}</span></div>`;
+          return `<div class="subject-row">
+            <div class="subject-row-head"><strong>${esc(k)}</strong>
+              <span class="small muted">${b.done}/${b.total} fait${b.done > 1 ? 's' : ''}${avg === null ? '' : ` · quiz ${avg} %`}</span></div>
+            ${progressBar(p, { big: true, color: subjectColor(k) })}</div>`;
         }).join('')}</div>
       </div>` : ''}
 
@@ -107,7 +109,7 @@ async function viewStudentHome() {
         const p = progressOf(its, S.subs);
         return `<a class="card week-row" href="#/semaine/${w.id}">
           <div class="week-row-main"><h3>${esc(weekLabel(w))}</h3>${w.title ? `<p class="muted">${esc(w.title)}</p>` : ''}</div>
-          <div class="week-row-side"><span class="pct">${p.pct}%</span>${progressBar(p, { small: true })}</div></a>`;
+          <div class="week-row-side"><span class="pct">${p.pct >= 100 ? icon('check') : ''}${p.pct} %</span>${progressBar(p)}</div></a>`;
       }).join('')}` : ''}`;
 }
 
