@@ -38,6 +38,10 @@ function createSupaApi(cfg) {
   async function callFn(name, body) {
     const { data, error } = await sb.functions.invoke(name, { body });
     if (error) {
+      if (error.name === 'FunctionsFetchError' || /Failed to send a request/i.test(error.message)) {
+        throw new Error(`Le serveur ne répond pas : vérifie dans Supabase > Edge Functions que la fonction « ${name} » existe bien, ` +
+          `avec exactement ce nom, et qu’elle est déployée (voir INSTALLATION.md, étape 3).`);
+      }
       let msg = error.message;
       try { const j = await error.context.json(); if (j?.error) msg = j.error; } catch { /* ignore */ }
       throw new Error(msg);
