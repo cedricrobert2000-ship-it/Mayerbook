@@ -1,61 +1,67 @@
 # 📘 Mayerbook
 
-Application web de suivi pour cours particuliers (du CM1 à la Terminale).
+Application de suivi pour cours particuliers, du CM1 à la Terminale.
 
-Chaque semaine, le prof prépare pour chaque élève :
-- 💡 des **notions à revoir** (rappel de cours, lien vers une vidéo ou une fiche) ;
-- ✏️ des **exercices** (énoncé + correction affichable ou non) ;
-- ❓ des **quiz** (QCM, vrai/faux, réponse courte), corrigés automatiquement.
+Chaque élève a **son propre espace**, avec un identifiant et un code donnés par le prof.
+Chaque semaine, le prof y prépare :
+- 💡 des **notions à revoir** : rappel de cours, fichiers, liens ;
+- ✏️ des **exercices** : énoncé, **fichiers importés** (PDF, photos), et une correction type qui reste privée ;
+- ❓ des **quiz** : QCM, vrai/faux, réponse courte.
 
-L'élève reçoit un **lien personnel**, coche ce qu'il a compris ou fait, répond aux quiz,
-puis renvoie ses **résultats** au prof en un clic.
+Le prof peut tout faire **générer par l'IA** (Claude) : à partir d'un sujet, ou d'un fichier importé
+comme une fiche d'exercices ou un cours.
 
-## Fonctionnement
+## Le parcours
 
-| Côté prof | Côté élève |
-|---|---|
-| Fiches élèves (classe, matières, contact, notes privées) | Page « Mon travail de la semaine » |
-| Une page par semaine : notions, exercices, quiz | « J'ai compris », « J'ai fait cet exercice » |
-| Bouton **Obtenir le lien** → WhatsApp, e-mail, copie | Quiz avec score et corrections |
-| **Importer les résultats** envoyés par l'élève | Progression enregistrée sur son appareil |
-| **Préparer la semaine suivante** en reprenant ce qui n'est pas acquis | Bouton **Envoyer à mon prof** |
+1. **Le prof** prépare la semaine, à la main ou avec l'IA, puis la **publie**.
+2. **L'élève** se connecte, lit les notions, écrit ses réponses ou envoie une photo de sa feuille, fait les quiz,
+   puis clique sur **Envoyer à mon prof**. Avant l'envoi, il ne voit **ni la correction ni les bonnes réponses**.
+   Une fois son travail envoyé, il ne peut plus le modifier.
+3. **Le prof** retrouve les copies dans **À corriger**. Il rédige une **correction détaillée**, avec l'aide de l'IA
+   s'il le souhaite, ajoute une note et peut joindre une photo annotée. Il peut aussi **renvoyer** le travail
+   à l'élève pour qu'il le refasse.
+4. **L'élève** reçoit sa correction et suit sa progression dans **Mon suivi** : avancement par matière,
+   moyenne aux quiz, historique des semaines.
 
-### Sans serveur ni compte
+Pour les quiz, le prof choisit si le score s'affiche dès l'envoi ou seulement après sa validation.
 
-- Les données du prof sont enregistrées **dans son navigateur** (localStorage).
-  Utilise **Exporter une sauvegarde** régulièrement, et pour changer d'ordinateur.
-- Le contenu de la semaine est compressé **dans le lien** envoyé à l'élève (après le `#`,
-  donc jamais envoyé à un serveur). Même principe pour le lien de résultats.
-- Si tu modifies une semaine déjà envoyée, renvoie un nouveau lien : la progression de l'élève est conservée.
+## Essayer tout de suite (mode démo)
 
-## Lancer l'application
-
-Aucune installation : ce sont des fichiers HTML/CSS/JS.
-
-En local :
+Sans configuration, l'application démarre en **mode démo** : les données restent dans le navigateur.
 
 ```bash
 python3 -m http.server 8000
 ```
 
-puis ouvrir http://localhost:8000.
+Ouvre ensuite http://localhost:8000. Comptes d'exemple : prof `prof@demo.fr` / `demo1234`, élèves `lea` / `1234` et `hugo` / `1234`.
+En mode démo, l'IA renvoie un exemple fictif.
 
-### Mettre en ligne gratuitement (GitHub Pages)
+## Mettre en ligne
 
-1. Sur GitHub : **Settings → Pages**.
-2. *Source* : **Deploy from a branch**, branche `main`, dossier `/ (root)`.
-3. L'application sera disponible sur `https://<ton-compte>.github.io/Mayerbook/`.
+Suis le guide pas à pas : **[INSTALLATION.md](INSTALLATION.md)**. Il faut un projet Supabase gratuit,
+une clé API Claude et GitHub Pages.
+
+## Sécurité
+
+- Les réponses des quiz et les corrections types sont dans une table que **seul le prof** peut lire.
+  Le score d'un quiz est calculé **sur le serveur**.
+- Un élève ne voit que **ses** semaines publiées et **ses** copies. Il ne peut rien modifier après l'envoi.
+- Les notes privées du prof sur un élève ne lui sont jamais visibles.
+- La clé de l'IA reste sur le serveur (secret Supabase).
 
 ## Structure
 
 ```
-index.html        page unique
-css/style.css     styles (thème clair/sombre automatique, mobile)
-js/utils.js       constantes (classes, matières) et utilitaires
-js/store.js       données du prof (localStorage), calcul de progression
-js/share.js       création et lecture des liens élève / résultats
-js/tutor.js       écrans du prof
-js/student.js     écran de l'élève
-js/demo.js        élèves d'exemple
-js/app.js         navigation et actions
+index.html                    page unique
+css/style.css                 styles (clair/sombre automatique, adapté au téléphone)
+js/config.js                  adresse et clé publique Supabase (vide = mode démo)
+js/api.js                     accès aux données : Supabase ou mode démo
+js/tutor.js                   espace prof (élèves, semaines, éditeur, corrections)
+js/ai.js                      génération par l'IA
+js/student.js                 espace élève (suivi, réponses, envoi)
+js/app.js                     connexion, navigation, actions
+js/demo.js                    données d'exemple du mode démo
+supabase/schema.sql           tables, règles de sécurité, fonctions
+supabase/functions/eleves     création des comptes élèves
+supabase/functions/ia         appels à Claude (génération, proposition de correction)
 ```

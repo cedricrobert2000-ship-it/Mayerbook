@@ -17,11 +17,17 @@ const SUBJECT_HUES = {
 };
 
 const TYPES = {
-  notion:   { label: 'Notion à revoir', plural: 'Notions à revoir', icon: '💡' },
-  exercice: { label: 'Exercice',        plural: 'Exercices',        icon: '✏️' },
-  quiz:     { label: 'Quiz',            plural: 'Quiz',             icon: '❓' }
+  notion:   { label: 'Notion à revoir', plural: 'Notions à revoir', icon: '💡', un: 'une notion' },
+  exercice: { label: 'Exercice',        plural: 'Exercices',        icon: '✏️', un: 'un exercice' },
+  quiz:     { label: 'Quiz',            plural: 'Quiz',             icon: '❓', un: 'un quiz' }
 };
 const TYPE_ORDER = ['notion', 'exercice', 'quiz'];
+
+const ANSWER_MODES = {
+  texte: 'Réponse écrite',
+  fichier: 'Photo / fichier',
+  les_deux: 'Écrite et/ou photo'
+};
 
 /* ---------- Helpers DOM / texte ---------- */
 
@@ -29,7 +35,11 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function uid() {
-  return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
 }
 
 function esc(s) {
@@ -49,6 +59,10 @@ function rich(s) {
 function truncate(s, n) {
   s = String(s ?? '').replace(/\s+/g, ' ').trim();
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+
+function plural(n, word, pluralWord) {
+  return `${n} ${n > 1 ? (pluralWord || word + 's') : word}`;
 }
 
 function subjectHue(subject) {
@@ -79,7 +93,16 @@ function unique(arr) {
   return [...new Set(arr.filter(Boolean))];
 }
 
-/** Normalise une réponse libre pour la comparer (casse, accents, ponctuation). */
+function slugify(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '').slice(0, 30);
+}
+
+function randomCode() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+/** Normalise une réponse libre (casse, accents, ponctuation) — identique au serveur. */
 function normalizeAnswer(s) {
   return String(s ?? '')
     .toLowerCase()
@@ -89,14 +112,62 @@ function normalizeAnswer(s) {
     .trim();
 }
 
-/* ---------- Dates (format AAAA-MM-JJ, heure locale) ---------- */
+/* ---------- Quiz ---------- */
+
+function isCorrect(q, keyAnswer, value) {
+  if (value === undefined || value === null || value === '' || keyAnswer === undefined) return false;
+  if (q.type === 'texte') {
+    const v = normalizeAnswer(value);
+    return String(keyAnswer || '').split('|').map(normalizeAnswer).filter(Boolean).includes(v);
+  }
+  return String(value) === String(keyAnswer);
+}
+
+function answerText(q, value) {
+  if (value === undefined || value === null || value === '') return '—';
+  if (q.type === 'texte') return String(value);
+  return q.options?.[Number(value)] ?? '—';
+}
+
+function expectedText(q, keyAnswer) {
+  if (q.type === 'texte') return String(keyAnswer || '').split('|')[0].trim();
+  return q.options?.[Number(keyAnswer)] ?? '';
+}
+
+/* ---------- Progression ---------- */
+
+function isItemDone(item, sub) {
+  if (!sub) return false;
+  if (item.type === 'notion') return !!sub.understood;
+  return sub.status === 'envoye' || sub.status === 'corrige';
+}
+
+function progressOf(items, subsByItem) {
+  const total = items.length;
+  const done = items.filter(it => isItemDone(it, subsByItem[it.id])).length;
+  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+}
+
+function indexBy(arr, key) {
+  const o = {};
+  for (const x of arr) o[x[key]] = x;
+  return o;
+}
+
+function groupBy(arr, key) {
+  const o = {};
+  for (const x of arr) (o[x[key]] ||= []).push(x);
+  return o;
+}
+
+/* ---------- Dates (AAAA-MM-JJ, heure locale) ---------- */
 
 function toISO(d) {
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 function parseISO(s) {
-  const [y, m, d] = String(s).split('-').map(Number);
+  const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
   return new Date(y, (m || 1) - 1, d || 1);
 }
 function todayISO() { return toISO(new Date()); }
@@ -107,21 +178,80 @@ function addDays(iso, n) {
 }
 function mondayOf(iso) {
   const d = parseISO(iso);
-  const day = (d.getDay() + 6) % 7; // lundi = 0
-  d.setDate(d.getDate() - day);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return toISO(d);
 }
 function fmtDay(iso, opts = { day: 'numeric', month: 'long' }) {
   return parseISO(iso).toLocaleDateString('fr-FR', opts);
 }
 function weekLabel(week) {
-  return `Semaine du ${fmtDay(week.start)} au ${fmtDay(addDays(week.start, 6))}`;
+  return `Semaine du ${fmtDay(week.start_date)} au ${fmtDay(addDays(week.start_date, 6))}`;
+}
+function isCurrentWeek(week) {
+  const t = todayISO();
+  return week.start_date <= t && t <= addDays(week.start_date, 6);
 }
 function fmtDateTime(ts) {
+  if (!ts) return '';
   return new Date(ts).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-/* ---------- UI : toast, modale, copie ---------- */
+/* ---------- Fichiers ---------- */
+
+function fileIcon(f) {
+  const t = f.type || '';
+  if (t.startsWith('image/')) return '🖼️';
+  if (t === 'application/pdf') return '📄';
+  return '📎';
+}
+function fmtSize(n) {
+  if (!n) return '';
+  return n > 1e6 ? (n / 1e6).toFixed(1) + ' Mo' : Math.max(1, Math.round(n / 1e3)) + ' Ko';
+}
+
+function readFileBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+/** Liste de fichiers ; les liens sont résolus après affichage (URL signées). */
+function fileList(files, { removable = false, dataAttr = '' } = {}) {
+  if (!files?.length) return '';
+  return `<ul class="files">${files.map((f, i) => `
+    <li>
+      <a class="file" data-file-path="${esc(f.path)}" href="#" target="_blank" rel="noopener">
+        <span>${fileIcon(f)}</span><span class="file-name">${esc(f.name)}</span><span class="muted tiny">${fmtSize(f.size)}</span>
+      </a>
+      ${removable ? `<button type="button" class="icon-btn danger" title="Retirer" data-action="remove-file" data-index="${i}" ${dataAttr}>✕</button>` : ''}
+    </li>`).join('')}</ul>`;
+}
+
+/** Aperçu des images d'une liste de fichiers. */
+function imagePreviews(files) {
+  const imgs = (files || []).filter(f => (f.type || '').startsWith('image/'));
+  if (!imgs.length) return '';
+  return `<div class="thumbs">${imgs.map(f => `<a data-file-path="${esc(f.path)}" href="#" target="_blank" rel="noopener"><img data-img-path="${esc(f.path)}" alt="${esc(f.name)}"></a>`).join('')}</div>`;
+}
+
+/** Remplit les href / src des fichiers affichés. */
+async function hydrateFiles(root = document) {
+  for (const a of $$('[data-file-path]', root)) {
+    if (a.dataset.resolved) continue;
+    a.dataset.resolved = '1';
+    Api.fileUrl(a.dataset.filePath).then(url => { if (url) a.href = url; }).catch(() => {});
+  }
+  for (const img of $$('img[data-img-path]', root)) {
+    if (img.dataset.resolved) continue;
+    img.dataset.resolved = '1';
+    Api.fileUrl(img.dataset.imgPath).then(url => { if (url) img.src = url; }).catch(() => {});
+  }
+}
+
+/* ---------- UI : toast, modale, chargement ---------- */
 
 let toastTimer;
 function toast(msg) {
@@ -129,7 +259,12 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function showError(e) {
+  console.error(e);
+  toast('⚠️ ' + (e?.message || 'Une erreur est survenue'));
 }
 
 const Modal = {
@@ -138,8 +273,9 @@ const Modal = {
     d.className = wide ? 'wide' : '';
     d.innerHTML = html;
     if (!d.open) d.showModal();
-    const first = d.querySelector('input:not([type=hidden]):not([type=radio]):not([type=checkbox]), textarea, select');
+    const first = d.querySelector('[autofocus], input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([type=file]), textarea, select');
     if (first) first.focus();
+    hydrateFiles(d);
     return d;
   },
   close() {
@@ -148,20 +284,34 @@ const Modal = {
   }
 };
 
+/** Désactive un bouton pendant une action asynchrone. */
+async function busy(btn, label, fn) {
+  const old = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${label}`; }
+  try { return await fn(); }
+  finally { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = old; } }
+}
+
+function progressBar(p, { small = false } = {}) {
+  return `<div class="progress ${small ? 'small' : ''}" role="progressbar" aria-valuenow="${p.pct}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-fill" style="width:${p.pct}%"></div>
+  </div>`;
+}
+
+function loadingHtml() {
+  return '<div class="loading"><span class="spinner big"></span></div>';
+}
+
 async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
     const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); } catch { /* ignore */ }
     ta.remove();
   }
-  toast('Copié dans le presse-papiers ✓');
+  toast('Copié ✓');
 }
 
 function downloadFile(filename, content, type = 'application/json') {
@@ -172,10 +322,4 @@ function downloadFile(filename, content, type = 'application/json') {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-}
-
-function progressBar(p, { small = false } = {}) {
-  return `<div class="progress ${small ? 'small' : ''}" role="progressbar" aria-valuenow="${p.pct}" aria-valuemin="0" aria-valuemax="100">
-    <div class="progress-fill" style="width:${p.pct}%"></div>
-  </div>`;
 }

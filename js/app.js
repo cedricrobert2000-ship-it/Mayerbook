@@ -1,131 +1,295 @@
 'use strict';
 
 /* =========================================================
-   Routeur et gestion des événements
-   #/                         tableau de bord
-   #/eleve/<id>               fiche élève
-   #/eleve/<id>/semaine/<id>  édition d'une semaine
-   #/apercu/<id>/<id>         aperçu côté élève (prof)
-   #/s/<données>              page de l'élève (lien partagé)
-   #/r/<données>              import des résultats (prof)
+   Démarrage, connexion, navigation et actions
    ========================================================= */
 
+let Session = null;
 let lastPath = null;
+let routeSeq = 0;
 
-async function route() {
-  const hash = location.hash.slice(1) || '/';
-  const parts = hash.split('/').filter(Boolean);
-  const studentMode = parts[0] === 's';
-  document.body.classList.toggle('student-mode', studentMode);
-  $('#topbar-tag').textContent = studentMode ? 'Mon travail de la semaine' : 'Espace prof';
-  $('#brand').setAttribute('href', studentMode ? location.hash : '#/');
+/* ---------- Connexion ---------- */
 
-  let html;
-  if (parts[0] === 's' && parts[1]) html = await StudentView.fromPayload(parts[1]);
-  else if (parts[0] === 'apercu') html = StudentView.fromStore(parts[1], parts[2]);
-  else if (parts[0] === 'r' && parts[1]) html = await viewImportResults(parts[1]);
-  else if (parts[0] === 'eleve' && parts[2] === 'semaine') html = viewWeek(parts[1], parts[3]);
-  else if (parts[0] === 'eleve') html = viewStudent(parts[1]);
-  else html = viewDashboard();
+function viewLogin(tab = 'eleve') {
+  const demo = Api.mode === 'demo';
+  return `
+    <div class="login">
+      <div class="login-brand">
+        <div class="login-logo">📘</div>
+        <h1>Mayerbook</h1>
+        <p class="muted">Le suivi de tes cours particuliers, semaine après semaine.</p>
+      </div>
 
-  $('#app').innerHTML = html;
-  const titleBits = { s: 'Mon travail', apercu: 'Aperçu', r: 'Résultats', eleve: 'Élève' };
-  document.title = (titleBits[parts[0]] ? titleBits[parts[0]] + ' · ' : '') + 'Mayerbook';
+      ${demo ? `
+        <div class="card notice-card">
+          <strong>Mode démo</strong>
+          <p class="small">Les données restent dans ce navigateur. Essaie les deux côtés :</p>
+          <div class="actions">
+            <button class="btn small" data-action="demo-login" data-who="prof">👩‍🏫 Entrer comme prof</button>
+            <button class="btn small" data-action="demo-login" data-who="lea">🧑‍🎓 Entrer comme élève (Léa)</button>
+          </div>
+          <p class="tiny muted">Prof : prof@demo.fr / demo1234 · Élèves : lea / 1234, hugo / 1234</p>
+        </div>` : ''}
 
-  if (hash !== lastPath) window.scrollTo(0, 0);
-  lastPath = hash;
+      <div class="card login-card-box">
+        <div class="seg tabs">
+          <label><input type="radio" name="login-tab" value="eleve" ${tab === 'eleve' ? 'checked' : ''} data-action="login-tab"><span>🧑‍🎓 Élève</span></label>
+          <label><input type="radio" name="login-tab" value="prof" ${tab === 'prof' ? 'checked' : ''} data-action="login-tab"><span>👩‍🏫 Prof</span></label>
+        </div>
+        ${tab === 'eleve' ? `
+          <form class="form plain" id="login-student">
+            <label class="field"><span>Identifiant</span>
+              <input name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ex : lea.martin"></label>
+            <label class="field"><span>Code</span>
+              <input name="code" required type="password" autocomplete="current-password" inputmode="text"></label>
+            <p class="form-error" hidden></p>
+            <button class="btn primary big block">Se connecter</button>
+            <p class="hint center">Ton identifiant et ton code t’ont été donnés par ton prof.</p>
+          </form>` : `
+          <form class="form plain" id="login-tutor">
+            <label class="field"><span>E-mail</span>
+              <input name="email" type="email" required autocomplete="email"></label>
+            <label class="field"><span>Mot de passe</span>
+              <input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
+            <p class="form-error" hidden></p>
+            <button class="btn primary big block" name="signin">Se connecter</button>
+            <button type="button" class="btn ghost block" data-action="tutor-signup">Première utilisation ? Créer le compte prof</button>
+          </form>`}
+      </div>
+    </div>`;
 }
 
-/** Ré-affiche la page courante (après une modification). */
+function bindLogin() {
+  const fs = $('#login-student');
+  if (fs) fs.onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(fs);
+    await doLogin(fs, () => Api.signInStudent(String(f.get('username')), String(f.get('code'))));
+  };
+  const ft = $('#login-tutor');
+  if (ft) ft.onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(ft);
+    await doLogin(ft, () => Api.signInTutor(String(f.get('email')), String(f.get('password'))));
+  };
+}
+
+async function doLogin(form, fn) {
+  const err = $('.form-error', form);
+  err.hidden = true;
+  try {
+    const s = await busy(form.querySelector('button.primary'), 'Connexion…', fn);
+    if (s?.needsConfirmation) {
+      err.textContent = 'Compte créé ! Clique sur le lien reçu par e-mail pour le confirmer, puis connecte-toi.';
+      err.classList.add('ok'); err.hidden = false;
+      return;
+    }
+    Session = s;
+    location.hash = '#/';
+    route(true);
+  } catch (ex) {
+    err.classList.remove('ok');
+    err.textContent = ex.message;
+    err.hidden = false;
+  }
+}
+
+/* ---------- Barre du haut ---------- */
+
+async function renderTopbar() {
+  const nav = $('#topnav');
+  if (!Session) { nav.innerHTML = Api.mode === 'demo' ? '<span class="pill">Mode démo</span>' : ''; return; }
+  if (Session.role === 'tutor') {
+    let n = 0;
+    try { n = (await Api.listToCorrect()).length; } catch { /* ignore */ }
+    nav.innerHTML = `
+      ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
+      <a href="#/" class="nav-link">Élèves</a>
+      <a href="#/corrections" class="nav-link">À corriger${n ? ` <span class="count-badge">${n}</span>` : ''}</a>
+      <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
+  } else {
+    nav.innerHTML = `
+      ${Api.mode === 'demo' ? '<span class="pill">Démo</span>' : ''}
+      <span class="nav-user">${avatar(Session.student.name, 'sm')} ${esc(firstName(Session.student.name))}</span>
+      <button class="btn small ghost" data-action="logout">Déconnexion</button>`;
+  }
+}
+
+/* ---------- Navigation ---------- */
+
+async function route(force = false) {
+  const seq = ++routeSeq;
+  const [path, query] = (location.hash.slice(1) || '/').split('?');
+  const parts = path.split('/').filter(Boolean);
+  const app = $('#app');
+
+  if (!Session) {
+    document.body.dataset.role = 'login';
+    app.innerHTML = viewLogin();
+    bindLogin();
+    renderTopbar();
+    return;
+  }
+  document.body.dataset.role = Session.role;
+  if (path !== lastPath || force) app.innerHTML = loadingHtml();
+
+  let html;
+  try {
+    if (Session.role === 'tutor') {
+      if (parts[0] === 'eleve' && parts[1]) html = await viewTutorStudent(parts[1]);
+      else if (parts[0] === 'semaine' && parts[1]) html = await viewTutorWeek(parts[1]);
+      else if (parts[0] === 'corrections') html = await viewTutorCorrections();
+      else if (parts[0] === 'copie' && parts[1]) html = await viewTutorCopy(parts[1]);
+      else html = await viewTutorHome();
+    } else {
+      if (parts[0] === 'semaine' && parts[1]) html = await viewStudentWeek(parts[1]);
+      else html = await viewStudentHome();
+    }
+  } catch (e) {
+    console.error(e);
+    html = `<div class="empty card"><h2>Oups</h2><p>${esc(e.message)}</p><a class="btn" href="#/">Retour à l’accueil</a></div>`;
+  }
+  if (seq !== routeSeq) return; // une autre navigation a eu lieu entre-temps
+
+  app.innerHTML = html;
+  hydrateFiles(app);
+  renderTopbar();
+  document.title = 'Mayerbook';
+
+  if (path !== lastPath) {
+    window.scrollTo(0, 0);
+    const item = new URLSearchParams(query || '').get('item');
+    if (item) setTimeout(() => $('#item-' + item)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+  lastPath = path;
+}
+
 function rerender() {
   const y = window.scrollY;
   route().then(() => window.scrollTo(0, y));
 }
 
-function findItem(sid, wid, iid) {
-  const w = Store.week(Store.student(sid), wid);
-  return { w, idx: w ? w.items.findIndex(i => i.id === iid) : -1 };
-}
+/* ---------- Actions (clics) ---------- */
 
 const Actions = {
   'close-modal': () => Modal.close(),
+  'close-modal-go': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); },
   'copy': d => copyText(d.text),
-  'native-share': d => navigator.share({ title: d.subject, text: d.subject, url: d.text }).catch(() => {}),
 
-  // Tableau de bord
-  'filter-level': d => { TutorUI.levelFilter = d.level; rerender(); },
+  // Connexion
+  'login-tab': (d, el) => { $('#app').innerHTML = viewLogin(el.value); bindLogin(); },
+  'demo-login': async d => {
+    try {
+      Session = d.who === 'prof' ? await Api.signInTutor('prof@demo.fr', 'demo1234') : await Api.signInStudent(d.who, '1234');
+      location.hash = '#/'; route(true);
+    } catch (e) { showError(e); }
+  },
+  'tutor-signup': async (d, el) => {
+    const form = el.closest('form');
+    const err = $('.form-error', form);
+    if (!form.reportValidity()) return;
+    const f = new FormData(form);
+    try {
+      const s = await busy(el, 'Création…', () => Api.signUpTutor(String(f.get('email')), String(f.get('password'))));
+      if (s?.needsConfirmation) {
+        err.textContent = 'Compte créé ! Clique sur le lien reçu par e-mail pour le confirmer, puis connecte-toi.';
+        err.classList.add('ok'); err.hidden = false; return;
+      }
+      Session = s; location.hash = '#/'; route(true);
+    } catch (ex) { err.classList.remove('ok'); err.textContent = ex.message; err.hidden = false; }
+  },
+  'logout': async () => {
+    await Api.signOut();
+    Session = null; lastPath = null;
+    location.hash = '#/'; route(true);
+  },
+
+  // Prof : élèves
+  'filter-level': d => { T.levelFilter = d.level; rerender(); },
   'new-student': () => openStudentForm(),
-  'load-demo': () => { loadDemoData(); rerender(); toast('Exemple chargé ✓'); },
-  'export-data': () => exportData(),
-  'import-data': () => importData(),
-  'import-results': () => openImportResults(),
-  'confirm-import': d => confirmImport(d.payload),
-
-  // Élève
-  'edit-student': d => openStudentForm(d.sid),
-  'delete-student': d => {
-    const s = Store.student(d.sid);
-    if (!confirm(`Supprimer ${s.name} et toutes ses semaines ? Cette action est définitive.`)) return;
-    Store.deleteStudent(d.sid);
-    location.hash = '#/';
-    toast('Élève supprimé');
+  'edit-student': () => openStudentForm(T.student),
+  'delete-student': async (d, el) => {
+    const s = T.student;
+    if (!confirm(`Supprimer ${s.name}, son compte et tout son travail ? C’est définitif.`)) return;
+    try { await busy(el, 'Suppression…', () => Api.deleteStudent(s.id)); location.hash = '#/'; toast('Élève supprimé'); }
+    catch (e) { showError(e); }
   },
+  'reset-code': () => openResetCode(),
+  'copy-login': d => copyText(loginInstructions(d.username, '')),
 
-  // Semaine
-  'new-week': d => openWeekForm(d.sid),
-  'edit-week': d => openWeekForm(d.sid, d.wid),
-  'delete-week': d => {
-    const s = Store.student(d.sid);
-    if (!confirm('Supprimer cette semaine ?')) return;
-    s.weeks = s.weeks.filter(w => w.id !== d.wid);
-    Store.save();
-    location.hash = `#/eleve/${s.id}`;
+  // Prof : semaines
+  'new-week': () => openWeekForm(null, T.student),
+  'edit-week': () => openWeekForm(T.week.week, T.week.student),
+  'delete-week': async () => {
+    if (!confirm('Supprimer cette semaine et tout le travail associé ?')) return;
+    try { await Api.deleteWeek(T.week.week.id); location.hash = `#/eleve/${T.week.student.id}`; }
+    catch (e) { showError(e); }
   },
-  'next-week': d => openNextWeekForm(d.sid, d.wid),
-  'share-week': d => openShareWeek(d.sid, d.wid),
-  'preview-week': d => { location.hash = `#/apercu/${d.sid}/${d.wid}`; },
-  'quiz-answers': d => openQuizAnswers(d.sid, d.wid, d.iid),
+  'toggle-publish': async (d, el) => {
+    const w = T.week.week;
+    try {
+      await busy(el, '…', () => Api.saveWeek({ ...w, published: !w.published }));
+      toast(w.published ? 'Semaine masquée' : `Publiée : ${firstName(T.week.student.name)} la voit dans son espace ✓`);
+      rerender();
+    } catch (e) { showError(e); }
+  },
+  'next-week': () => openNextWeekForm(),
 
-  // Éléments
-  'add-item': d => openItemForm(d.sid, d.wid, d.type),
-  'edit-item': d => openItemForm(d.sid, d.wid, null, d.iid),
-  'delete-item': d => {
-    const { w, idx } = findItem(d.sid, d.wid, d.iid);
-    if (idx < 0 || !confirm(`Supprimer « ${w.items[idx].title} » ?`)) return;
-    w.items.splice(idx, 1);
-    Store.save();
-    rerender();
+  // Prof : éléments
+  'add-item': d => openItemForm(d.type),
+  'edit-item': d => openItemForm(null, d.iid),
+  'delete-item': async d => {
+    const it = T.week.items.find(i => i.id === d.iid);
+    const sub = T.week.subs[d.iid];
+    const warn = sub && sub.status !== 'brouillon' ? '\nAttention : l’élève a déjà envoyé une réponse, elle sera supprimée.' : '';
+    if (!confirm(`Supprimer « ${it.title} » ?${warn}`)) return;
+    try { await Api.deleteItem(d.iid); rerender(); } catch (e) { showError(e); }
   },
-  'move-item': d => {
-    const { w, idx } = findItem(d.sid, d.wid, d.iid);
-    if (idx < 0) return;
-    const type = w.items[idx].type;
-    const same = w.items.map((it, i) => ({ it, i })).filter(x => x.it.type === type);
-    const pos = same.findIndex(x => x.i === idx);
+  'move-item': async d => {
+    const items = T.week.items;
+    const it = items.find(i => i.id === d.iid);
+    const same = items.filter(i => i.type === it.type);
+    const pos = same.indexOf(it);
     const other = same[pos + Number(d.dir)];
     if (!other) return;
-    [w.items[idx], w.items[other.i]] = [w.items[other.i], w.items[idx]];
-    Store.save();
-    rerender();
+    try {
+      await Api.setPositions([{ id: it.id, position: other.position }, { id: other.id, position: it.position }]);
+      rerender();
+    } catch (e) { showError(e); }
   },
 
-  // Élève (page partagée)
-  'st-understood': d => {
-    const p = StudentView.prog;
-    p.understood[d.iid] = !p.understood[d.iid];
-    StudentView.saveProgress();
-    StudentView.draw();
+  // Prof : IA
+  'open-ai': () => openAiDialog(),
+  'ai-add': (d, el) => aiAddSelected(el),
+  'ai-edit': d => aiEdit(Number(d.index)),
+  'ai-correct': (d, el) => aiProposeCorrection(el),
+
+  // Prof : correction
+  'insert-model': () => {
+    const ta = $('#correction-form textarea[name=feedback]');
+    ta.value = (ta.value ? ta.value + '\n\n' : '') + T.copy.key.model_answer;
+    ta.focus();
   },
-  'st-done': d => {
-    const p = StudentView.prog;
-    p.done[d.iid] = !p.done[d.iid];
-    StudentView.saveProgress();
-    StudentView.draw();
+  'return-copy': async (d, el) => {
+    const fb = $('#correction-form textarea[name=feedback]').value.trim() || 'Relis ton travail, corrige-le et renvoie-le moi.';
+    if (!confirm('Renvoyer ce travail à l’élève ? Il pourra modifier sa réponse et la renvoyer. Ton commentaire actuel lui sera affiché.')) return;
+    try {
+      await busy(el, '…', () => Api.returnToStudent(T.copy.sub.id, fb));
+      toast('Renvoyé à l’élève ✓');
+      location.hash = `#/semaine/${T.copy.week.id}`;
+    } catch (e) { showError(e); }
   },
-  'st-quiz-open': d => { StudentView.openQuiz[d.iid] = true; StudentView.draw(); },
-  'st-quiz-submit': d => StudentView.submitQuiz(d.iid),
-  'st-quiz-retry': d => StudentView.retryQuiz(d.iid),
-  'st-send': () => StudentView.send()
+  'remove-file': (d) => {
+    if (d.list === 'feedback') { T.copy.feedbackFiles.splice(Number(d.index), 1); drawFeedbackFiles(); }
+    else if (d.iid && Session?.role === 'student') studentRemoveFile(d.iid, Number(d.index));
+  },
+
+  // Élève
+  'st-understood': async d => {
+    try { await studentSave(d.iid, { understood: !S.subs[d.iid]?.understood }); } catch (e) { showError(e); }
+  },
+  'st-quiz-open': d => { S.openQuiz[d.iid] = true; refreshStudentItem(d.iid); },
+  'st-submit': (d, el) => studentSubmit(d.iid, el)
 };
 
 document.addEventListener('click', e => {
@@ -133,46 +297,77 @@ document.addEventListener('click', e => {
   if (!el || el.disabled) return;
   const fn = Actions[el.dataset.action];
   if (!fn) return;
-  e.preventDefault();
+  if (el.type !== 'radio') e.preventDefault();
   fn(el.dataset, el);
 });
 
-// Champs enregistrés automatiquement
+// Liens vers fichiers pas encore résolus
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-file-path]');
+  if (a && a.getAttribute('href') === '#') {
+    e.preventDefault();
+    Api.fileUrl(a.dataset.filePath).then(url => url && window.open(url, '_blank', 'noopener'));
+  }
+});
+
+/* ---------- Saisie ---------- */
+
+let messageTimer;
 document.addEventListener('input', e => {
   const t = e.target;
-  if (t.dataset.field === 'week-message') {
-    const w = Store.week(Store.student(t.dataset.sid), t.dataset.wid);
-    if (w) { w.message = t.value; Store.save(); }
-  } else if (t.dataset.field === 'st-comment') {
-    StudentView.prog.comment = t.value;
-    StudentView.saveProgress();
+  if (t.dataset.field === 'week-message' && T.week) {
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(() => {
+      Api.saveWeek({ ...T.week.week, message: t.value })
+        .then(w => { T.week.week = w; toast('Message enregistré ✓'); })
+        .catch(showError);
+    }, 800);
+  } else if (t.classList.contains('answer-text')) {
+    const iid = t.dataset.iid;
+    scheduleAnswerSave(iid, () => ({ answer: $(`.answer-text[data-iid="${iid}"]`)?.value ?? '' }));
   } else if (t.classList.contains('quiz-text')) {
-    StudentView.setAnswer(t.dataset.iid, t.dataset.qid, t.value);
+    const iid = t.dataset.iid;
+    scheduleAnswerSave(iid, () => ({ answers: currentQuizAnswers(iid) }));
   }
 });
 
-document.addEventListener('change', e => {
+document.addEventListener('change', async e => {
   const t = e.target;
   if (t.type === 'radio' && t.name.startsWith('qa-')) {
-    StudentView.setAnswer(t.dataset.iid, t.dataset.qid, Number(t.value));
     $$(`input[name="${t.name}"]`).forEach(r => r.closest('.choice')?.classList.toggle('picked', r.checked));
+    const iid = t.dataset.iid;
+    scheduleAnswerSave(iid, () => ({ answers: currentQuizAnswers(iid) }));
+  } else if (t.dataset.upload === 'answer') {
+    studentUpload(t);
+  } else if (t.dataset.upload === 'feedback' && T.copy) {
+    const files = [...t.files];
+    t.value = '';
+    try {
+      await busy(t.closest('label'), 'Envoi…', async () => {
+        for (const f of files) T.copy.feedbackFiles.push(await Api.uploadFile(T.copy.student.id, 'prof', f));
+      });
+      drawFeedbackFiles();
+    } catch (ex) { showError(ex); }
   }
 });
 
-// Fermer la modale en cliquant à l'extérieur
-$('#modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) Modal.close();
-});
-
-// Synchronise si les données changent dans un autre onglet
-window.addEventListener('storage', e => {
-  if (e.key === Store.KEY && !document.body.classList.contains('student-mode')) {
-    Store.load();
-    rerender();
+document.addEventListener('submit', e => {
+  if (e.target.id === 'correction-form') {
+    e.preventDefault();
+    submitCorrection(e.target).catch(showError);
   }
 });
 
+$('#modal').addEventListener('click', e => { if (e.target === e.currentTarget) Modal.close(); });
 window.addEventListener('hashchange', () => { Modal.close(); route(); });
 
-Store.load();
-route();
+/* ---------- Démarrage ---------- */
+
+(async () => {
+  try { Session = await Api.getSession(); } catch (e) { console.error(e); Session = null; }
+  if (Session?.role === 'none') {
+    await Api.signOut();
+    Session = null;
+  }
+  route(true);
+})();
