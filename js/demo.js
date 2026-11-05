@@ -60,7 +60,7 @@ function seedDemo(db) {
     content: 'ABC est un triangle rectangle en A avec AB = 6 cm et AC = 8 cm.\nCalcule BC en détaillant.', answer_mode: 'les_deux', share_model: true },
   { model_answer: 'Le triangle est rectangle en A, donc d’après le théorème de Pythagore :\nBC² = AB² + AC² = 36 + 64 = 100\nBC = √100 = **10 cm**' });
   item(w1, { type: 'exercice', subject: 'Français', title: 'Accorde les participes passés',
-    content: 'Recopie en accordant si nécessaire :\n1. Les lettres que j’ai (écrire)…\n2. J’ai (manger) les gâteaux.\n3. La chanson qu’elle a (chanter)…' },
+    content: 'Recopie en accordant si nécessaire :\n1. Les lettres que j’ai (écrire)…\n2. J’ai (manger) les gâteaux.\n3. La chanson qu’elle a (chanter)…', share_model: true },
   { model_answer: '1. écrites (COD « que » = les lettres, placé avant)\n2. mangé (COD après)\n3. chantée' });
   item(w1, { type: 'quiz', subject: 'Mathématiques', title: 'Quiz Pythagore', content: 'Sans calculatrice !',
     questions: [

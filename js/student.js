@@ -130,7 +130,7 @@ async function viewStudentWeek(wid) {
 
   // Corrigés disponibles (seulement pour le travail déjà corrigé)
   await Promise.all(items
-    .filter(i => i.type !== 'notion' && S.subs[i.id]?.status === 'corrige' && !S.solutions[i.id])
+    .filter(i => i.type !== 'notion' && S.subs[i.id] && S.subs[i.id].status !== 'brouillon' && !S.solutions[i.id])
     .map(async i => { S.solutions[i.id] = await Api.getSolution(i.id); }));
   markSeen(items.filter(i => S.subs[i.id]?.status === 'corrige').map(i => S.subs[i.id].id));
 
@@ -166,22 +166,26 @@ function statusBanner(it, sub) {
     return '';
   }
   if (sub.status === 'envoye') {
-    return `<div class="sent-box">📨 Envoyé le ${fmtDateTime(sub.submitted_at)} — <strong>en attente de correction</strong> par ton prof.</div>`;
+    const sol = S.solutions[it.id] || {};
+    return `<div class="sent-box">📨 Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
+      (sol.model_answer ? 'Compare ta réponse avec la correction ci-dessous : ton prof va aussi corriger <strong>ta</strong> copie.'
+        : '<strong>En attente de correction</strong> par ton prof.') + '</div>';
   }
   return '';
 }
 
 function correctionBlock(it, sub) {
-  if (sub?.status !== 'corrige') return '';
+  if (!sub || sub.status === 'brouillon') return '';
   const sol = S.solutions[it.id] || {};
-  const hasFeedback = sub.feedback || sub.grade || sub.feedback_files?.length;
+  const corrected = sub.status === 'corrige';
+  const hasFeedback = corrected && (sub.feedback || sub.grade || sub.feedback_files?.length);
   return `
     ${hasFeedback ? `<div class="feedback-box">
       <div class="feedback-head"><strong>✅ Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
       ${sub.feedback ? `<div class="content">${rich(sub.feedback)}</div>` : ''}
       ${imagePreviews(sub.feedback_files)}${fileList(sub.feedback_files)}
     </div>` : ''}
-    ${sol.model_answer ? `<details class="correction"><summary>📘 Voir la correction type</summary><div class="content">${rich(sol.model_answer)}</div></details>` : ''}`;
+    ${sol.model_answer ? `<details class="correction" ${corrected ? '' : 'open'}><summary>📘 Correction détaillée</summary><div class="content">${rich(sol.model_answer)}</div></details>` : ''}`;
 }
 
 function studentItem(it) {
@@ -226,7 +230,8 @@ function studentExercise(it, sub) {
           ${draft ? fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` }) : fileList(files)}
           ${draft ? `<label class="btn file-btn">📷 Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
         ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">📨 Envoyer à mon prof</button>
-          <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. La correction apparaîtra ici.</p>` : ''}
+          <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. ${it.share_model && it.instant_result
+            ? 'Tu verras la correction juste après l’envoi.' : 'La correction apparaîtra ici.'}</p>` : ''}
       </div>
       ${correctionBlock(it, sub)}
     </article>`;
@@ -296,7 +301,7 @@ function studentQuiz(it, sub) {
 
 async function refreshStudentItem(iid) {
   const it = S.data.items.find(i => i.id === iid);
-  if (S.subs[iid]?.status === 'corrige' && it.type !== 'notion') S.solutions[iid] = await Api.getSolution(iid);
+  if (S.subs[iid] && S.subs[iid].status !== 'brouillon' && it.type !== 'notion') S.solutions[iid] = await Api.getSolution(iid);
   const el = $('#item-' + iid);
   if (el) {
     el.outerHTML = studentItem(it);
@@ -366,7 +371,7 @@ async function studentSubmit(iid, btn) {
       S.subs[iid] = await Api.studentSubmit(iid);
     });
     await refreshStudentItem(iid);
-    toast(S.subs[iid].status === 'corrige' ? 'Envoyé ✓ Voici ton résultat !' : 'Envoyé à ton prof ✓');
+    toast(S.subs[iid].status === 'corrige' || S.solutions[iid]?.model_answer ? 'Envoyé ✓ Voici la correction !' : 'Envoyé à ton prof ✓');
     $('#item-' + iid)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) { showError(e); }
 }

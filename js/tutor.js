@@ -271,7 +271,8 @@ function tutorItemCard(it, sub, idx, count) {
   const extras = [
     it.attachments?.length ? `📎 ${plural(it.attachments.length, 'fichier')}` : '',
     it.type === 'exercice' ? ANSWER_MODES[it.answer_mode] : '',
-    it.type === 'exercice' && T.week.keys[it.id]?.model_answer ? 'Correction type ✓' : '',
+    it.type === 'exercice' && T.week.keys[it.id]?.model_answer
+      ? (!it.share_model ? 'Correction privée' : it.instant_result ? 'Correction montrée après l’envoi' : 'Correction montrée après ta correction') : '',
     it.link ? '🔗 Lien' : ''
   ].filter(Boolean).join(' · ');
   return `
@@ -370,7 +371,7 @@ async function viewTutorCopy(subId) {
 
         ${key.model_answer ? `
           <details class="card subtle">
-            <summary><strong>🔒 Ta correction type</strong> <span class="muted small">(${item.share_model ? 'sera montrée à l’élève' : 'privée'})</span></summary>
+            <summary><strong>📘 Ta correction type</strong> <span class="muted small">(${!item.share_model ? 'privée' : item.instant_result ? 'déjà visible par l’élève depuis son envoi' : 'sera montrée à l’élève avec ta correction'})</span></summary>
             <div class="content">${rich(key.model_answer)}</div>
             <button class="btn small" data-action="insert-model">Insérer dans ma correction</button>
           </details>` : ''}
@@ -679,7 +680,13 @@ function openItemForm(type, iid, preset) {
           <select name="answer_mode">${Object.entries(ANSWER_MODES).map(([k, v]) => `<option value="${k}" ${draft.answer_mode === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
         <label class="field"><span>🔒 Correction type <span class="muted">(visible seulement par toi, sert aussi à l’IA pour corriger)</span></span>
           <textarea name="model_answer" rows="4">${esc(draft.model_answer)}</textarea></label>
-        <label class="check"><input type="checkbox" name="share_model" ${draft.share_model ? 'checked' : ''}> Montrer cette correction type à l’élève une fois sa copie corrigée</label>` : ''}
+        <label class="field"><span>Quand l’élève voit cette correction</span>
+          <select name="show_model">
+            <option value="instant" ${draft.share_model && draft.instant_result ? 'selected' : ''}>Juste après avoir envoyé sa réponse (jamais avant)</option>
+            <option value="after" ${draft.share_model && !draft.instant_result ? 'selected' : ''}>Après ma correction personnalisée</option>
+            <option value="never" ${!draft.share_model ? 'selected' : ''}>Jamais (elle reste privée)</option>
+          </select>
+          <span class="hint">Dans tous les cas, la copie arrive dans « À corriger » : tu peux ensuite lui envoyer une correction personnalisée.</span></label>` : ''}
       ${type === 'quiz' ? `
         <label class="check"><input type="checkbox" name="instant_result" ${draft.instant_result ? 'checked' : ''}> Afficher le score et les corrections à l’élève dès qu’il envoie
           <span class="hint">Sinon, il les verra après ta validation.</span></label>
@@ -781,8 +788,8 @@ function openItemForm(type, iid, preset) {
       link: type === 'notion' ? String(f.get('link') || '').trim() : '',
       attachments: draft.attachments,
       answer_mode: type === 'exercice' ? f.get('answer_mode') : 'texte',
-      instant_result: type === 'quiz' ? !!f.get('instant_result') : true,
-      share_model: type === 'exercice' ? !!f.get('share_model') : false,
+      instant_result: type === 'quiz' ? !!f.get('instant_result') : type === 'exercice' ? f.get('show_model') !== 'after' : true,
+      share_model: type === 'exercice' ? f.get('show_model') !== 'never' : false,
       questions: []
     };
     const k = { answers: {}, model_answer: type === 'exercice' ? String(f.get('model_answer') || '').trim() : '' };

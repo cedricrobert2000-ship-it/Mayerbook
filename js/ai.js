@@ -267,7 +267,7 @@ function aiPresets() {
   return AI.result.entries.map(x => x.type === 'quiz'
     ? quizToItem(x, x.subject)
     : {
-      item: { type: x.type, subject: x.subject || AI.params.subject, title: x.title, content: x.content, answer_mode: 'les_deux', share_model: true },
+      item: { type: x.type, subject: x.subject || AI.params.subject, title: x.title, content: x.content, answer_mode: 'les_deux', share_model: true, instant_result: true },
       key: { answers: {}, model_answer: x.model_answer || '' }
     });
 }

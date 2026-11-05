@@ -53,7 +53,7 @@ create table if not exists public.items (
   answer_mode text not null default 'texte' check (answer_mode in ('texte', 'fichier', 'les_deux')),
   -- Questions du quiz SANS les réponses : [{id, type, prompt, options}]
   questions jsonb not null default '[]',
-  instant_result boolean not null default true,
+  instant_result boolean not null default true,  -- quiz : score dès l'envoi ; exercice : correction type dès l'envoi
   share_model boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -314,7 +314,7 @@ begin
 end;
 $$;
 
--- Corrigé visible par l'élève seulement après envoi / correction.
+-- Corrigé visible par l'élève seulement APRÈS son envoi (jamais avant).
 create or replace function public.get_solution(p_item uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -330,9 +330,14 @@ begin
   end if;
   select * into sub from public.submissions where item_id = p_item and student_id = sid;
   select * into k from public.item_keys where item_id = p_item;
-  if sub.id is null or sub.status <> 'corrige' then return res; end if;
-  if it.type = 'quiz' then res := res || jsonb_build_object('answers', coalesce(k.answers, '{}')); end if;
-  if it.share_model and coalesce(k.model_answer, '') <> '' then
+  -- Rien avant l'envoi
+  if sub.id is null or sub.status = 'brouillon' then return res; end if;
+  if it.type = 'quiz' and sub.status = 'corrige' then
+    res := res || jsonb_build_object('answers', coalesce(k.answers, '{}'));
+  end if;
+  -- Correction type : juste après l'envoi (instant_result) ou après la correction du prof
+  if it.share_model and coalesce(k.model_answer, '') <> ''
+     and (sub.status = 'corrige' or it.instant_result) then
     res := res || jsonb_build_object('model_answer', k.model_answer);
   end if;
   return res;

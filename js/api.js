@@ -537,11 +537,11 @@ function createDemoApi() {
     async getSolution(itemId) {
       const { st, it } = visibleItem(itemId);
       const s = db.subs.find(x => x.item_id === itemId && x.student_id === st.id);
-      if (!s || s.status !== 'corrige') return {};
+      if (!s || s.status === 'brouillon') return {};
       const k = db.keys[itemId] || {};
       const res = {};
-      if (it.type === 'quiz') res.answers = clone(k.answers || {});
-      if (it.share_model && k.model_answer) res.model_answer = k.model_answer;
+      if (it.type === 'quiz' && s.status === 'corrige') res.answers = clone(k.answers || {});
+      if (it.share_model && k.model_answer && (s.status === 'corrige' || it.instant_result)) res.model_answer = k.model_answer;
       return res;
     }
   };
