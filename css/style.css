@@ -1,4 +1,14 @@
+/* ---------- Polices (hébergées dans /fonts, licence SIL OFL) ---------- */
+@font-face { font-family: 'Paytone One'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/paytone-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url(../fonts/inter-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap; src: url(../fonts/inter-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(../fonts/inter-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(../fonts/inter-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url(../fonts/inter-latin-800-normal.woff2) format('woff2'); }
+
 :root {
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Paytone One', 'Inter', system-ui, sans-serif;
   --bg: #f6f5f1;
   --surface: #ffffff;
   --surface-2: #f1efe9;
@@ -53,7 +63,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font: 16px/1.5 var(--font-body);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
 }
 
 a { color: var(--primary); }
@@ -546,3 +558,21 @@ body[data-role="student"] .container { max-width: 780px; }
 .prompt-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
 .prompt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .prompt-box textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem !important; }
+
+/* =========================================================
+   Titres d'accent : Paytone One (avec parcimonie)
+   ========================================================= */
+.brand, .login-brand h1, .page-head h1, .hero h1 {
+  font-family: var(--font-display);
+  font-weight: 400;               /* Paytone n'a qu'une graisse : pas de faux gras */
+  letter-spacing: -0.01em;
+}
+.brand { font-size: 1.3rem; color: var(--primary); gap: 6px; }
+.brand-icon { font-size: 1.1rem; }
+.login-brand h1 { font-size: 2.4rem; color: var(--primary); letter-spacing: -0.015em; }
+.page-head h1 { font-size: 1.85rem; line-height: 1.15; }
+.hero h1 { font-size: 2rem; line-height: 1.1; }
+@media (max-width: 560px) {
+  .page-head h1 { font-size: 1.5rem; }
+  .hero h1 { font-size: 1.7rem; }
+}
