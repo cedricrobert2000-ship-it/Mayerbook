@@ -7,6 +7,6 @@
  * La clé « anon / publishable » est faite pour être publique : ne mets JAMAIS la clé service_role ici.
  */
 window.MAYERBOOK_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://essmphsqbicerwagvdlm.supabase.co',
+  supabaseAnonKey: 'sb_publishable_J330if75_M893VudeTWgXA_PcgHjn16'
 };
