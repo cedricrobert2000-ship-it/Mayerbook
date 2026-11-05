@@ -63,7 +63,7 @@ async function viewStudentHome() {
         ${progressBar(p)}
         ${todo.length ? `<ul class="todo">${todo.slice(0, 5).map(i => `<li>${TYPES[i.type].icon} ${esc(i.title)}</li>`).join('')}${todo.length > 5 ? `<li class="muted">… et ${todo.length - 5} autre(s)</li>` : ''}</ul>`
           : '<p class="cheer">🎉 Tout est fait cette semaine, bravo !</p>'}
-        <span class="btn primary">${p.done ? 'Continuer' : 'Commencer'} →</span>
+        <span class="cta">${p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">→</span></span>
       </a>`;
   }
 

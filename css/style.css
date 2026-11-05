@@ -641,3 +641,109 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { padding: var(--
   :root:not([data-theme="light"]) .tag[data-s="philo"]    { --tag-bg: #1d3a1d; --tag-fg: #c2ecc2; }
   :root:not([data-theme="light"]) .tag[data-s="svt"]      { --tag-bg: #213a1d; --tag-fg: #caecc2; }
 }
+
+/* =========================================================
+   Cartes v2 — sans bordure, grands arrondis, cartes colorées
+   (inspiration : apps d'apprentissage modernes)
+   ========================================================= */
+:root {
+  --radius-card: 24px;
+  --radius-inner: 16px;
+  --shadow-card: 0 1px 2px rgb(20 18 22 / .04), 0 10px 30px rgb(20 18 22 / .06);
+  --tint: 13%;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0c;
+    --surface: #18181b;
+    --surface-2: #232327;
+    --border: #2c2c31;
+    --shadow-card: none;
+    --tint: 20%;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0c; --surface: #18181b; --surface-2: #232327; --border: #2c2c31; --shadow-card: none; --tint: 20%;
+}
+
+/* Toutes les cartes : plus de bordure */
+.card, .card.subtle, .item-card, .s-item, .week-row, .student-card,
+.new-corrections, .current-week, .publish-card, .publish-card.is-published, dialog {
+  border: 0;
+}
+.card { border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.card.subtle { box-shadow: none; }
+dialog { border-radius: 28px; }
+
+/* Boutons et bascules en pilule */
+.btn, .toggle, .seg, .seg span { border-radius: 999px; }
+.btn.secondary, .btn:not(.primary):not(.ghost) { background: var(--surface-2); border-color: transparent; }
+.btn:not(.primary):not(.ghost):hover { background: color-mix(in srgb, var(--text) 8%, var(--surface-2)); }
+input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 12px; }
+.choice { border-radius: var(--radius-inner); }
+.files .file, .student-answer, .quiz-q, .teacher-msg, .feedback-box, .sent-box, .notice, details.correction { border-radius: var(--radius-inner); }
+
+/* Cartes colorées selon le type (notion, exercice, quiz) */
+.item-card, .s-item {
+  border-left: 0;
+  background: color-mix(in srgb, var(--accent) var(--tint), var(--surface));
+}
+.s-item.is-done { background: color-mix(in srgb, var(--ok) var(--tint), var(--surface)); }
+.item-card .icon-btn:hover, .s-item .choice { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.s-item .choice { background: var(--surface); }
+.s-item .quiz-q { background: color-mix(in srgb, var(--surface) 75%, transparent); }
+.s-item .quiz-q.ok { background: var(--ok-soft); }
+.s-item .quiz-q.ko { background: var(--ko-soft); }
+
+/* Cartes de chiffres colorées */
+.stat-row .card { box-shadow: none; }
+.stat-row .card:nth-child(1) { background: color-mix(in srgb, var(--primary) var(--tint), var(--surface)); }
+.stat-row .card:nth-child(2) { background: color-mix(in srgb, var(--ok) var(--tint), var(--surface)); }
+.stat-row .card:nth-child(3) { background: color-mix(in srgb, var(--mid) var(--tint), var(--surface)); }
+
+/* Survol : la carte se soulève au lieu d'une bordure colorée */
+.student-card, .week-row, .corr-link { transition: transform .15s ease, box-shadow .15s ease; }
+.student-card:hover, .week-row:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgb(20 18 22 / .10); }
+.student-card-week { border-top: 0; padding-top: 6px; }
+
+/* Carte vedette : « Cette semaine » (accueil élève) et en-tête de la semaine */
+.current-week, .hero.card {
+  background: var(--primary);
+  color: #fff;
+  padding: 24px;
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.current-week:hover { box-shadow: 0 20px 48px color-mix(in srgb, var(--primary) 38%, transparent); transform: translateY(-2px); }
+.current-week .muted, .hero.card .muted, .current-week .todo, .hero.card .hero-progress-label { color: rgb(255 255 255 / .82); }
+.current-week h2, .hero.card h1 { color: #fff; }
+.current-week .teacher-msg, .hero.card .teacher-msg { background: rgb(255 255 255 / .14); color: #fff; }
+.current-week .teacher-msg span, .hero.card .teacher-msg span { color: rgb(255 255 255 / .85); }
+.current-week .progress, .hero.card .progress { background: rgb(255 255 255 / .22); }
+.current-week .progress-fill, .hero.card .progress-fill { background: #fff; }
+.current-week .cheer, .hero.card .cheer { color: #fff; }
+.cta {
+  display: inline-flex; align-items: center; gap: 14px; margin-top: 16px;
+  padding: 6px 6px 6px 22px; border-radius: 999px;
+  background: #141216; color: #fff; font-weight: 600;
+}
+.cta-arrow { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #141216; font-size: 1.1rem; }
+
+/* Autres cartes mises en valeur */
+.new-corrections { background: var(--ok-soft); box-shadow: none; }
+.corr-link { border-radius: 14px; }
+.corr-link:hover { transform: translateX(3px); }
+.publish-card.is-published { background: color-mix(in srgb, var(--ok) var(--tint), var(--surface)); }
+.ai-card { box-shadow: none; }
+.account, .backup-note { box-shadow: none; }
+.empty.card { box-shadow: none; background: var(--surface); }
+/* Carte vedette : toujours le violet de marque Figma, lisible en clair comme en sombre */
+:root { --feature: #604b9f; }
+.current-week, .hero.card { background: var(--feature); box-shadow: 0 16px 40px color-mix(in srgb, var(--feature) 30%, transparent); }
+.current-week:hover { box-shadow: 0 20px 48px color-mix(in srgb, var(--feature) 40%, transparent); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --tint: 15%; }
+  :root:not([data-theme="light"]) .current-week, :root:not([data-theme="light"]) .hero.card { box-shadow: none; }
+}
+/* Filtres : pilules sans bordure */
+.chip { border-color: transparent; background: var(--surface-2); }
+.chip.active { border-color: var(--text); }
