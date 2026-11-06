@@ -257,7 +257,7 @@ function openMascotPicker(first = false) {
         ${first ? '' : '<button type="button" class="btn ghost" data-action="close-modal">Annuler</button>'}
         <button class="btn primary">${first ? 'C’est parti !' : 'Choisir'}</button>
       </div>
-    </form>`, { wide: true });
+    </form>`, { wide: true, sheet: true });
   const form = $('#mascot-form', d);
   // Le personnage sélectionné saute de joie
   const refresh = () => $$('.mascot-choice', form).forEach(l => {

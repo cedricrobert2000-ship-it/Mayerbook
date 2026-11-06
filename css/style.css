@@ -1726,3 +1726,62 @@ body {
 @keyframes splash-up { from { opacity: 0; transform: translateY(10px); } }
 @media (prefers-reduced-motion: reduce) { .splash-logo, .splash-logo::before, .splash-name { animation: none; } }
 .login-title, h1.login-title { color: #fff !important; -webkit-text-fill-color: #fff; background: none; }
+
+/* =========================================================
+   Bottom sheets : le détail s'ouvre depuis le bas, la page reste légère
+   ========================================================= */
+dialog.sheet {
+  margin: auto 0 0; width: 100%; max-width: 100%; max-height: 88vh; overflow-y: auto;
+  border-radius: 28px 28px 0 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  border: 1px solid var(--border) !important; border-bottom: 0 !important;
+  background: #17121F; color: var(--text);
+  animation: sheet-up .32s cubic-bezier(.2, .9, .3, 1);
+  transition: transform .2s ease;
+}
+@media (min-width: 720px) {
+  dialog.sheet { max-width: 560px; margin: auto auto 0; }
+  dialog.sheet.wide { max-width: 760px; }
+}
+dialog.sheet::backdrop { background: rgb(5 3 10 / .6); backdrop-filter: blur(3px); }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+.sheet-handle { width: 44px; height: 5px; border-radius: 999px; background: rgb(255 255 255 / .22); margin: 0 auto 14px; }
+.sheet-center { text-align: center; display: grid; justify-items: center; gap: 4px; padding: 4px 0; }
+.sheet-center h2 { margin: 8px 0 2px; font-size: 1.4rem; }
+.sheet-center p { margin: 0 0 6px; }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 14px; }
+.sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sheet-head h2 { margin: 0; font-size: 1.4rem; }
+.sheet-head p { margin: 0; }
+.sheet-head > div { flex: 1; min-width: 0; }
+.sheet-section { background: var(--surface-2); border-radius: 18px; padding: 14px 16px; margin-bottom: 12px; }
+.sheet-section h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: .95rem; color: var(--muted); }
+.sheet-section .content { font-size: 1.02rem; }
+dialog.sheet > .btn.block { margin-top: 6px; }
+.grade.big { font-size: 1.15rem; padding: 8px 14px; }
+
+/* Revue des réponses d'un quiz */
+.review-q { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+.review-q:first-of-type { border-top: 0; }
+.review-icon { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.review-q.ok .review-icon { background: var(--ok); }
+.review-q.ko .review-icon { background: var(--ko); }
+.review-icon .icon { width: 16px; height: 16px; }
+.review-prompt { margin: 0 0 2px; font-weight: 600; }
+.review-answer { margin: 0; }
+.review-answer s { color: var(--muted); }
+
+/* États compacts dans les pages */
+.corr-card, .state-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 12px 14px; text-align: left;
+  border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer;
+}
+.corr-card { border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
+.state-card.ko { border-color: color-mix(in srgb, var(--ko) 45%, transparent); background: color-mix(in srgb, var(--ko) 12%, var(--surface)); margin: 0 0 14px; }
+.corr-card > span, .state-card > span { flex: 1; display: grid; }
+.corr-card .small, .state-card .small { color: var(--muted); }
+.corr-card > .icon, .state-card > .icon { color: var(--muted); }
+.corr-card .m-face, .state-card .m-face { flex: none; }
+.state-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; flex-wrap: wrap; }
+.state-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--mid) 16%, var(--surface)); color: var(--mid); font-weight: 700; font-size: .88rem; }
+.state-pill .icon { width: 16px; height: 16px; }
+.logout-confirm { text-align: center; }

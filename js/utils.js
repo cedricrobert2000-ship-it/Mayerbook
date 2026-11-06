@@ -269,10 +269,10 @@ function showError(e) {
 }
 
 const Modal = {
-  open(html, { wide = false } = {}) {
+  open(html, { wide = false, sheet = false } = {}) {
     const d = $('#modal');
-    d.className = wide ? 'wide' : '';
-    d.innerHTML = html;
+    d.className = [wide ? 'wide' : '', sheet ? 'sheet' : ''].join(' ').trim();
+    d.innerHTML = (sheet ? '<div class="sheet-handle" aria-hidden="true"></div>' : '') + html;
     if (!d.open) d.showModal();
     const first = d.querySelector('[autofocus], input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([type=file]), textarea, select');
     if (first) first.focus();
@@ -284,6 +284,52 @@ const Modal = {
     if (d.open) d.close();
   }
 };
+
+/** Panneau qui monte du bas de l'écran. */
+function openSheet(html, o = {}) { return Modal.open(html, { ...o, sheet: true }); }
+
+/** Confirmation en bottom sheet (remplace confirm()). Renvoie une promesse true/false. */
+function confirmSheet({ title, text = '', ok = 'Oui', cancel = 'Annuler', mood = 'wow' }) {
+  return new Promise(resolve => {
+    const d = openSheet(`
+      <div class="sheet-center">
+        ${mascot((typeof myMascot === 'function' && myMascot()) || 'zen', { mood, size: 96, anim: 'bob' })}
+        <h2>${title}</h2>
+        ${text ? `<p class="muted">${text}</p>` : ''}
+        <div class="sheet-actions">
+          <button class="btn big" data-sheet="no">${cancel}</button>
+          <button class="btn primary big" data-sheet="ok" data-action="sheet-ok">${ok}</button>
+        </div>
+      </div>`);
+    let done = false;
+    const finish = v => { if (done) return; done = true; Modal.close(); resolve(v); };
+    d.querySelector('[data-sheet=ok]').addEventListener('click', e => { e.stopPropagation(); finish(true); });
+    d.querySelector('[data-sheet=no]').addEventListener('click', e => { e.stopPropagation(); finish(false); });
+    d.addEventListener('close', () => finish(false), { once: true });
+  });
+}
+
+// Glisser vers le bas pour fermer un bottom sheet
+(() => {
+  let y0 = null, d = null;
+  document.addEventListener('touchstart', e => {
+    d = e.target.closest('dialog.sheet');
+    if (!d || d.scrollTop > 0 || e.target.closest('input, textarea, select')) { y0 = null; return; }
+    y0 = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (y0 === null || !d) return;
+    const dy = Math.max(0, e.touches[0].clientY - y0);
+    d.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (y0 === null || !d) return;
+    const dy = e.changedTouches[0].clientY - y0;
+    d.style.transform = '';
+    if (dy > 90) Modal.close();
+    y0 = null;
+  }, { passive: true });
+})();
 
 /** Désactive un bouton pendant une action asynchrone. */
 async function busy(btn, label, fn) {

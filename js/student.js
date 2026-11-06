@@ -226,30 +226,81 @@ async function viewStudentProgress() {
 
 function statusBanner(it, sub) {
   if (!sub || sub.status === 'brouillon') {
-    if (sub?.feedback) return `<div class="feedback-box warn"><strong>${icon('undo-2')} Ton prof te demande de refaire ce travail :</strong><div>${rich(sub.feedback)}</div></div>`;
+    if (sub?.feedback) return `<button class="state-card ko" data-action="sheet-redo" data-iid="${it.id}">
+      ${mascotFace('worried', { size: 46 })}<span><strong>Ton prof te demande de refaire</strong><span class="small">Voir son message</span></span>${icon('chevron-right')}</button>`;
     return '';
   }
   if (sub.status === 'envoye') {
     const sol = S.solutions[it.id] || {};
-    return `<div class="sent-box">${icon('send')} Envoyé le ${fmtDateTime(sub.submitted_at)}. ` +
-      (sol.model_answer ? 'Compare ta réponse avec la correction ci-dessous : ton prof va aussi corriger <strong>ta</strong> copie.'
-        : '<strong>En attente de correction</strong> par ton prof.') + '</div>';
+    return `<div class="state-row"><span class="state-pill">${icon('send')} Envoyé</span>
+      ${sol.model_answer ? `<button class="btn primary small" data-action="sheet-correction" data-iid="${it.id}">${icon('book-open')} Voir la correction</button>`
+        : '<span class="muted small">Ton prof va corriger</span>'}</div>`;
   }
   return '';
 }
 
+/** Carte compacte « Corrigé » : le détail s'ouvre dans un bottom sheet. */
 function correctionBlock(it, sub) {
-  if (!sub || sub.status === 'brouillon') return '';
+  if (!sub || sub.status !== 'corrige') return '';
+  const ratio = it.type === 'quiz' && sub.total ? sub.score / sub.total : null;
+  const mood = ratio === null ? 'happy' : ratio === 1 ? 'proud' : ratio >= .5 ? 'happy' : 'worried';
+  return `<button class="corr-card" data-action="sheet-correction" data-iid="${it.id}">
+    ${mascotFace(mood, { size: 54 })}
+    <span class="grow"><strong>${it.type === 'quiz' ? (ratio === 1 ? 'Parfait !' : 'Quiz corrigé') : 'Corrigé !'}</strong><span class="small">Voir la correction</span></span>
+    ${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : it.type === 'quiz' && sub.total ? `<span class="grade">${sub.score}/${sub.total}</span>` : ''}
+    ${icon('chevron-right')}</button>`;
+}
+
+/** Détail des réponses d'un quiz corrigé (dans le sheet). */
+function quizReviewHtml(it, sub) {
   const sol = S.solutions[it.id] || {};
+  return (it.questions || []).map((q, i) => {
+    const key = sol.answers?.[q.id];
+    if (!key) return '';
+    const val = sub.answers?.[q.id];
+    const ok = isCorrect(q, key.answer, val);
+    return `<div class="review-q ${ok ? 'ok' : 'ko'}">
+      <span class="review-icon">${icon(ok ? 'check' : 'x')}</span>
+      <div><p class="review-prompt">${rich(q.prompt)}</p>
+        ${ok ? `<p class="review-answer">${esc(answerText(q, val))}</p>`
+          : `<p class="review-answer"><s>${esc(answerText(q, val))}</s> → <strong>${esc(expectedText(q, key.answer) || answerText(q, key.answer))}</strong></p>`}
+        ${key.explanation ? `<p class="muted small">${rich(key.explanation)}</p>` : ''}</div></div>`;
+  }).join('');
+}
+
+async function openCorrectionSheet(iid, { justSent = false } = {}) {
+  const it = S.data.items.find(i => i.id === iid);
+  const sub = S.subs[iid];
+  if (!it || !sub) return;
+  if (!S.solutions[iid]) S.solutions[iid] = await Api.getSolution(iid);
+  const sol = S.solutions[iid] || {};
   const corrected = sub.status === 'corrige';
-  const hasFeedback = corrected && (sub.feedback || sub.grade || sub.feedback_files?.length);
-  return `
-    ${hasFeedback ? `<div class="feedback-box">
-      <div class="feedback-head"><strong>${icon('circle-check')} Correction de ton prof</strong>${sub.grade ? `<span class="grade">${esc(sub.grade)}</span>` : ''}</div>
-      ${sub.feedback ? `<div class="content">${rich(sub.feedback)}</div>` : ''}
-      ${imagePreviews(sub.feedback_files)}${fileList(sub.feedback_files)}
-    </div>` : ''}
-    ${sol.model_answer ? `<details class="correction" ${corrected ? '' : 'open'}><summary>${icon('book-open')} Correction détaillée</summary><div class="content">${rich(sol.model_answer)}</div></details>` : ''}`;
+  const feedback = corrected && (sub.feedback || sub.feedback_files?.length);
+  const ratio = it.type === 'quiz' && sub.total ? sub.score / sub.total : null;
+  const d = openSheet(`
+    <div class="sheet-head">
+      ${mascot(myMascot() || 'zen', { mood: justSent ? 'proud' : ratio !== null && ratio < .5 ? 'worried' : 'happy', size: 72, anim: 'bounce' })}
+      <div><h2>${justSent ? 'Envoyé !' : 'Correction'}</h2><p class="muted small">${esc(it.title)}</p></div>
+      ${sub.grade ? `<span class="grade big">${esc(sub.grade)}</span>` : corrected && it.type === 'quiz' ? `<span class="grade big">${sub.score}/${sub.total}</span>` : ''}
+    </div>
+    ${feedback ? `<section class="sheet-section"><h3>${icon('message-circle')} Mot de ton prof</h3>
+      ${sub.feedback ? `<div class="content">${rich(sub.feedback)}</div>` : ''}${imagePreviews(sub.feedback_files)}${fileList(sub.feedback_files)}</section>` : ''}
+    ${it.type === 'quiz' && corrected ? `<section class="sheet-section"><h3>${icon('circle-check')} Mes réponses</h3>${quizReviewHtml(it, sub)}</section>` : ''}
+    ${sol.model_answer ? `<section class="sheet-section"><h3>${icon('book-open')} Correction détaillée</h3><div class="content">${rich(sol.model_answer)}</div>
+      ${!corrected ? '<p class="muted small">Compare avec ta réponse : ton prof va aussi corriger ta copie.</p>' : ''}</section>` : ''}
+    ${!feedback && !sol.model_answer && !(it.type === 'quiz' && corrected) ? '<p class="muted">Ton prof va corriger ta copie.</p>' : ''}
+    <button class="btn primary big block" data-action="close-modal">${justSent ? 'Super !' : 'Fermer'}</button>`);
+  hydrateFiles(d);
+}
+
+function openRedoSheet(iid) {
+  const sub = S.subs[iid];
+  if (!sub?.feedback) return;
+  openSheet(`
+    <div class="sheet-head">${mascot(myMascot() || 'zen', { mood: 'worried', size: 72 })}
+      <div><h2>À refaire</h2><p class="muted small">Le message de ton prof</p></div></div>
+    <section class="sheet-section"><div class="content">${rich(sub.feedback)}</div></section>
+    <button class="btn primary big block" data-action="close-modal">J’ai compris</button>`);
 }
 
 function studentItem(it) {
@@ -284,18 +335,16 @@ function studentExercise(it, sub) {
       ${imagePreviews(it.attachments)}${fileList(it.attachments)}
       ${statusBanner(it, sub)}
       <div class="answer-zone">
-        <h4>Ma réponse</h4>
+        ${draft ? '' : '<h4>Ma réponse</h4>'}
         ${mode !== 'fichier' ? (draft
           ? `<textarea class="answer-text" data-iid="${it.id}" rows="5" placeholder="Écris ta réponse ici…">${esc(sub?.answer || '')}</textarea>
-             <span class="hint save-state" id="save-${it.id}">${sub?.answer ? 'Brouillon enregistré' : 'Ta réponse est enregistrée automatiquement.'}</span>`
+             <span class="hint save-state" id="save-${it.id}">${sub?.answer ? 'Brouillon enregistré' : ''}</span>`
           : (sub.answer ? `<div class="student-answer">${rich(sub.answer)}</div>` : '')) : ''}
         ${mode !== 'texte' ? `
           ${imagePreviews(files)}
           ${draft ? fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` }) : fileList(files)}
-          ${draft ? `<label class="btn file-btn">${icon('camera')} Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
-        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer à mon prof</button>
-          <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. ${it.share_model && it.instant_result
-            ? 'Tu verras la correction juste après l’envoi.' : 'La correction apparaîtra ici.'}</p>` : ''}
+          ${draft ? `<label class="btn file-btn">${icon('camera')} Photo<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
+        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer à mon prof</button>` : ''}
       </div>
       ${correctionBlock(it, sub)}
     </article>`;
@@ -325,7 +374,6 @@ function studentQuiz(it, sub) {
           <span>${icon('heart')} ${HEARTS} vies</span><span>${icon('zap')} jusqu’à ${qs.length * XP.quizRight + XP.quizPerfect} XP</span></div>
         ${done ? progressBar({ pct: Math.round(100 * done / Math.max(1, qs.length)) }) : ''}
         <button class="btn primary big block" data-action="lesson-open" data-iid="${it.id}">${done ? `Reprendre (${done}/${qs.length})` : 'Commencer le quiz'} ${icon('arrow-right')}</button>
-        <p class="hint">Une question à la fois : tu sais tout de suite si c’est juste.</p>
       </div></article>`;
   }
 
@@ -358,9 +406,16 @@ function studentQuiz(it, sub) {
       </div>`;
   }).join('');
 
+  if (!draft) {
+    return `<article class="card s-item type-quiz ${corrected ? 'is-done' : ''}" id="item-${it.id}">${head}
+      ${corrected ? `<div class="quiz-score ${sub.score === sub.total ? 'perfect' : ''}">
+           ${myMascotForScore(sub.score / sub.total, 64)}<div>${sub.score === sub.total ? 'Parfait !' : sub.score >= sub.total / 2 ? 'Pas mal !' : 'Continue tes efforts !'}<br>Score : <strong>${sub.score} / ${sub.total}</strong></div></div>
+         ${correctionBlock(it, sub)}` : statusBanner(it, sub)}
+    </article>`;
+  }
+
   const footer = draft
-    ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer mes réponses</button>
-       <p class="hint">${it.instant_result ? 'Tu verras ton score et la correction juste après l’envoi.' : 'Ton prof validera tes réponses avant que tu voies le résultat.'}</p>`
+    ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer mes réponses</button>`
     : corrected
       ? `<div class="quiz-score ${sub.score === sub.total ? 'perfect' : ''}">
            ${myMascotForScore(sub.score / sub.total, 64)}<div>${sub.score === sub.total ? 'Parfait !' : sub.score >= sub.total / 2 ? 'Pas mal !' : 'Continue tes efforts !'}<br>Score : <strong>${sub.score} / ${sub.total}</strong></div></div>`
@@ -437,20 +492,21 @@ async function studentSubmit(iid, btn) {
   await flushSave(iid);
   const sub = S.subs[iid];
   if (it.type === 'exercice') {
-    if (!sub?.answer?.trim() && !sub?.files?.length) return toast('Écris ta réponse ou ajoute une photo avant d’envoyer.');
-    if (!confirm('Envoyer ta réponse à ton prof ? Tu ne pourras plus la modifier.')) return;
+    if (!sub?.answer?.trim() && !sub?.files?.length) return toast('Écris ta réponse ou ajoute une photo.');
+    if (!await confirmSheet({ title: 'On envoie ?', text: 'Tu ne pourras plus modifier ta réponse.', ok: 'Envoyer', cancel: 'Pas encore', mood: 'wow' })) return;
   } else {
     const answers = sub?.answers || {};
     const missing = (it.questions || []).filter(q => answers[q.id] === undefined || answers[q.id] === '').length;
-    if (!confirm(missing ? `Il te reste ${plural(missing, 'question')} sans réponse. Envoyer quand même ?` : 'Envoyer tes réponses ? Tu ne pourras plus les modifier.')) return;
+    if (!await confirmSheet({ title: missing ? `Il manque ${plural(missing, 'réponse')}` : 'On envoie ?', text: missing ? 'Envoyer quand même ?' : 'Tu ne pourras plus les modifier.', ok: 'Envoyer', cancel: 'Pas encore', mood: missing ? 'worried' : 'wow' })) return;
   }
   try {
     await busy(btn, 'Envoi…', async () => {
       S.subs[iid] = await Api.studentSubmit(iid);
     });
     await refreshStudentItem(iid);
-    toast(S.subs[iid].status === 'corrige' || S.solutions[iid]?.model_answer ? 'Envoyé. Voici la correction !' : 'Envoyé à ton prof');
-    $('#item-' + iid)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof markActiveToday === 'function') markActiveToday();
+    if (S.subs[iid].status === 'corrige' || S.solutions[iid]?.model_answer) openCorrectionSheet(iid, { justSent: true });
+    else toast('Envoyé à ton prof');
   } catch (e) { showError(e); }
 }
 

@@ -318,11 +318,11 @@ const Actions = {
   'logout': () => {
     const who = Session?.role === 'student' ? (myMascot() || 'meh') : 'meh';
     const name = Session?.role === 'student' ? firstName(Session.student.name) : '';
-    Modal.open(`
+    openSheet(`
       <div class="form logout-confirm">
         ${mascot(who, { mood: 'sad', anim: 'pop', size: 96, label: 'Personnage triste' })}
         <h2>Tu pars déjà${name ? ', ' + esc(name) : ''} ?</h2>
-        <p class="muted">Es-tu sûr de vouloir te déconnecter ? Il faudra ressaisir ${Session?.role === 'student' ? 'ton identifiant et ton code' : 'ton e-mail et ton mot de passe'} pour revenir.</p>
+        <p class="muted">Il faudra ressaisir ${Session?.role === 'student' ? 'ton code' : 'ton mot de passe'} pour revenir.</p>
         <div class="logout-actions">
           <button type="button" class="btn primary" data-action="close-modal" autofocus>Non, je reste</button>
           <button type="button" class="btn ghost danger" data-action="logout-confirm">${icon('log-out')} Me déconnecter</button>
@@ -422,7 +422,9 @@ const Actions = {
     try { await studentSave(d.iid, { understood: !S.subs[d.iid]?.understood }); } catch (e) { showError(e); }
   },
   'st-quiz-open': d => { S.openQuiz[d.iid] = true; refreshStudentItem(d.iid); },
-  'st-submit': (d, el) => studentSubmit(d.iid, el)
+  'st-submit': (d, el) => studentSubmit(d.iid, el),
+  'sheet-correction': d => openCorrectionSheet(d.iid),
+  'sheet-redo': d => openRedoSheet(d.iid)
 };
 
 document.addEventListener('click', e => {
