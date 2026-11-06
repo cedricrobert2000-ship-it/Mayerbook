@@ -466,8 +466,9 @@ a.status { text-decoration: none; }
 .login-card-box { padding: 20px; }
 .form.plain { padding: 0; margin-top: 16px; }
 .form-error.ok { color: var(--ok); }
-.notice-card { background: var(--mid-soft); border-color: transparent; }
-.notice-card p { margin: 4px 0 8px; }
+.demo-card { background: var(--c-yellow); color: var(--ink); border-color: transparent; }
+.demo-card .muted { color: rgb(20 18 22 / .7); }
+.demo-card p { margin: 4px 0 8px; }
 
 /* Choix segmentés (onglets, type d'IA) */
 .seg { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 12px; }
@@ -873,7 +874,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
    ========================================================= */
 .mascot { display: inline-block; width: var(--s); height: var(--s); flex: none; line-height: 0; vertical-align: middle; }
 .mascot svg { width: 100%; height: 100%; overflow: visible; display: block; }
-.mascot .m-all { transform-box: view-box; transform-origin: 50% 88%; }
+.mascot .m-all { transform-box: view-box; transform-origin: 50% 94%; }
 .mascot .m-eyes { transform-box: fill-box; transform-origin: center; }
 .mascot .m-eyes.blink { animation: m-blink 4.6s infinite; animation-delay: var(--d); }
 
@@ -1038,10 +1039,10 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 .stat-mascot .m-face { color: var(--text); }
 .m-face svg path, .m-face svg circle, .m-face svg ellipse { --face: var(--text); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .m-face svg [stroke="#111"] { stroke: #ecebef; }
-  :root:not([data-theme="light"]) .m-face svg [fill="#111"] { fill: #ecebef; }
-  :root:not([data-theme="light"]) .current-week .m-face svg [stroke="#111"], :root:not([data-theme="light"]) .hero.card .m-face svg [stroke="#111"] { stroke: #111; }
-  :root:not([data-theme="light"]) .current-week .m-face svg [fill="#111"], :root:not([data-theme="light"]) .hero.card .m-face svg [fill="#111"] { fill: #111; }
+  :root:not([data-theme="light"]) .m-face svg [stroke="#141216"] { stroke: #ecebef; }
+  :root:not([data-theme="light"]) .m-face svg [fill="#141216"] { fill: #ecebef; }
+  :root:not([data-theme="light"]) .current-week .m-face svg [stroke="#141216"], :root:not([data-theme="light"]) .hero.card .m-face svg [stroke="#141216"] { stroke: #111; }
+  :root:not([data-theme="light"]) .current-week .m-face svg [fill="#141216"], :root:not([data-theme="light"]) .hero.card .m-face svg [fill="#141216"] { fill: #111; }
 }
 
 /* Pastille de type : la seule touche de couleur des cartes de travail */
@@ -1451,3 +1452,77 @@ html.lesson-open .toast { z-index: 300; }
 .list-card .corr-link .grow { flex: 1; }
 .new-dot { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--primary); color: #fff; font-size: .7rem; font-weight: 700; vertical-align: middle; }
 @media (prefers-reduced-motion: reduce) { .step.next .step-num { animation: none; } }
+
+
+/* Bras animés des personnages */
+.mascot .m-arm { transform-box: view-box; animation: m-arm-l 2.8s ease-in-out infinite; animation-delay: calc(var(--d) * -1); }
+.mascot .m-arm-r { animation-name: m-arm-r; }
+@keyframes m-arm-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(10deg); } }
+@keyframes m-arm-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-10deg); } }
+.m-bounce .m-arm, .m-pop .m-arm { animation-duration: .75s; }
+.m-bounce .m-arm-l, .m-pop .m-arm-l { animation-name: m-cheer-l; }
+.m-bounce .m-arm-r, .m-pop .m-arm-r { animation-name: m-cheer-r; }
+@keyframes m-cheer-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-22deg); } }
+@keyframes m-cheer-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(22deg); } }
+.m-wiggle .m-arm-r { animation: m-wave .9s ease-in-out infinite; }
+@keyframes m-wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-38deg); } }
+.m-sleep .m-arm { animation: none; }
+.m-hop .m-leg { animation: m-tuck .9s cubic-bezier(.3,.7,.4,1) infinite; transform-box: fill-box; transform-origin: top; }
+@keyframes m-tuck { 40% { transform: scaleY(.75); } }
+@media (prefers-reduced-motion: reduce) { .mascot .m-arm, .mascot .m-leg { animation: none !important; } }
+
+
+/* =========================================================
+   Thème v6 : couleurs vives des personnages + fond papier à grain léger
+   ========================================================= */
+:root {
+  --bg: #FAF6EF;
+  --surface: #F2EDE4;
+  --surface-2: #E9E2D6;
+  --border: #E0D8CA;
+  --primary: #7B3FE4;
+  --primary-soft: #EEE5FF;
+  --feature: #7B3FE4;
+  --c-lime: #6EE89E;
+  --c-yellow: #FFD84A;
+  --c-sky: #6CCBFB;
+  --c-pink: #FF9EC4;
+  --c-lilac: #BE9CFF;
+  --c-orange: #FFA24F;
+  --c-coral: #FF7A85;
+  --ok: #17A65A;
+  --ok-soft: #DDF7E7;
+  --ko: #E5303D;
+  --ko-soft: #FFE3E5;
+  --grain-opacity: .07;
+  --grain-blend: multiply;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #100D16; --surface: #1C1824; --surface-2: #272231; --border: #322C3D;
+    --primary: #A57BFF; --primary-soft: #2A2140; --feature: #7B3FE4;
+    --ok: #3DD67F; --ok-soft: #14301F; --ko: #FF5A66; --ko-soft: #3A161B;
+    --grain-opacity: .09; --grain-blend: screen;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #100D16; --surface: #1C1824; --surface-2: #272231; --border: #322C3D;
+  --primary: #A57BFF; --primary-soft: #2A2140; --feature: #7B3FE4;
+  --ok: #3DD67F; --ok-soft: #14301F; --ko: #FF5A66; --ko-soft: #3A161B;
+  --grain-opacity: .09; --grain-blend: screen;
+}
+
+/* Grain : un bruit très léger posé sur toute l'app (ne bloque aucun clic) */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+@media print { body::after { display: none; } }
+
+/* Carte « Cette semaine » : grande carte colorée, texte encre */
+.current-week { background: var(--c-lime); color: var(--ink); border: 0; box-shadow: none; }
+.current-week .muted { color: rgb(20 18 22 / .65); }
+.current-week:hover { box-shadow: none; transform: translateY(-2px); }
+.lesson { background: var(--bg); }

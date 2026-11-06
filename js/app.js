@@ -21,7 +21,7 @@ function viewLogin(tab = 'eleve') {
       </div>
 
       ${demo ? `
-        <div class="card notice-card">
+        <div class="card demo-card">
           <strong>Mode démo</strong>
           <p class="small">Les données restent dans ce navigateur. Essaie les deux côtés :</p>
           <div class="actions">

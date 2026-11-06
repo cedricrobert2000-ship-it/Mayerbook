@@ -8,47 +8,80 @@
    mascot('zen', { mood: 'happy', size: 64, anim: 'bounce', label: 'Bravo !' })
    ========================================================= */
 
-const INK = '#111';
-const ST = `stroke="${INK}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+const INK = '#141216';
+const ST = `stroke="${INK}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
 
-/* Corps de chaque personnage + position du visage (x, yeux, écart, bouche, échelle) */
+/* Corps de chaque personnage (formes plates, couleurs vives),
+   épaules / hanches pour les bras et jambes animés, position du visage. */
 const MASCOTS = {
-  zen: {
-    body: '<circle cx="100" cy="100" r="82" fill="#A8E89A"/>',
-    face: { x: 100, ey: 94, d: 28, my: 134, f: 1 },
+  zen: {   // œuf vert, serein
+    color: '#4EE38A',
+    body: c => `<ellipse cx="100" cy="94" rx="58" ry="72" fill="${c}"/>`,
+    arms: [[46, 112], [154, 112]], hips: [82, 118], bottom: 160,
+    face: { x: 100, ey: 84, d: 26, my: 120, f: 1.1 },
     own: 'calm'
   },
-  grr: {
-    body: '<rect x="22" y="28" width="156" height="150" rx="42" fill="#FF9A5C"/>',
-    face: { x: 100, ey: 106, d: 24, my: 146, f: 1 },
+  grr: {   // hexagone rouge, râleur
+    color: '#F2343F',
+    body: c => `<polygon points="58,26 142,26 178,94 142,160 58,160 22,94" fill="${c}" stroke="${c}" stroke-width="14" stroke-linejoin="round"/>`,
+    arms: [[30, 112], [170, 112]], hips: [76, 124], bottom: 164,
+    face: { x: 100, ey: 84, d: 28, my: 126, f: 1.05 },
     own: 'angry'
   },
-  zap: {
-    body: '<polygon points="122,8 46,112 94,112 72,194 160,78 110,78 136,8" fill="#FFD84D" stroke="#FFD84D" stroke-width="14" stroke-linejoin="round"/>',
-    face: { x: 102, ey: 94, d: 15, my: 118, f: 0.72 },
+  zap: {   // étoile jaune, plein d'énergie
+    color: '#FFD21F',
+    body: c => `<polygon points="100,8 124,62 182,66 138,104 152,162 100,132 48,162 62,104 18,66 76,62" fill="${c}" stroke="${c}" stroke-width="16" stroke-linejoin="round"/>`,
+    arms: [[40, 76], [160, 76]], hips: [86, 114], bottom: 140,
+    face: { x: 100, ey: 84, d: 19, my: 110, f: 0.88 },
     own: 'happy'
   },
-  snooze: {
-    body: '<path d="M18 176 Q18 36 100 36 Q182 36 182 176 Z" fill="#9CC8F5" stroke="#9CC8F5" stroke-width="10" stroke-linejoin="round"/>',
-    face: { x: 100, ey: 114, d: 28, my: 150, f: 1 },
+  snooze: { // nuage bleu, champion de la sieste
+    color: '#40BFFA',
+    body: c => `<g fill="${c}"><circle cx="72" cy="94" r="34"/><circle cx="114" cy="78" r="42"/><circle cx="150" cy="108" r="30"/><circle cx="48" cy="122" r="28"/><rect x="40" y="104" width="128" height="52" rx="26"/></g>`,
+    arms: [[34, 132], [166, 132]], hips: [82, 122], bottom: 154,
+    face: { x: 102, ey: 104, d: 26, my: 134, f: 1 },
     own: 'sleep'
   },
-  ouch: {
-    body: '<polygon points="100,30 176,170 24,170" fill="#FF7A6B" stroke="#FF7A6B" stroke-width="34" stroke-linejoin="round"/>',
-    face: { x: 100, ey: 124, d: 24, my: 156, f: 0.85 },
+  ouch: {  // triangle corail, un peu maladroit
+    color: '#FF5F6D',
+    body: c => `<polygon points="100,22 178,152 22,152" fill="${c}" stroke="${c}" stroke-width="26" stroke-linejoin="round"/>`,
+    arms: [[36, 128], [164, 128]], hips: [78, 122], bottom: 164,
+    face: { x: 100, ey: 104, d: 21, my: 134, f: 0.92 },
     own: 'ouch'
   },
-  wow: {
-    body: '<circle cx="100" cy="104" r="80" fill="#D9B8F5"/><path d="M44 58 Q100 0 160 60" stroke="#B98BE6" stroke-width="12" stroke-linecap="round" fill="none"/>',
-    face: { x: 100, ey: 96, d: 26, my: 146, f: 1 },
+  wow: {   // rond violet à antenne, curieux
+    color: '#8A3FF0',
+    body: c => `<path d="M110 30 Q112 14 126 8" stroke="${c}" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="128" cy="6" r="9" fill="${c}"/><circle cx="100" cy="96" r="70" fill="${c}"/>`,
+    arms: [[34, 118], [166, 118]], hips: [82, 118], bottom: 162,
+    face: { x: 100, ey: 84, d: 29, my: 126, f: 1.12 },
     own: 'wow'
   },
-  meh: {
-    body: '<ellipse cx="100" cy="106" rx="84" ry="74" fill="#F7A8D8"/>',
-    face: { x: 100, ey: 94, d: 27, my: 146, f: 1 },
+  meh: {   // goutte turquoise, timide
+    color: '#14D9CF',
+    body: c => `<path d="M100 10 C114 34 158 78 158 116 A58 58 0 0 1 42 116 C42 78 86 34 100 10Z" fill="${c}"/>`,
+    arms: [[46, 128], [154, 128]], hips: [84, 116], bottom: 170,
+    face: { x: 100, ey: 108, d: 24, my: 140, f: 1 },
     own: 'sad'
   }
 };
+
+/* Bras levés pour la joie, baissés sinon */
+const ARMS_UP = ['happy', 'proud', 'wow'];
+
+function mLimbs(m, mood) {
+  const c = m.color, up = ARMS_UP.includes(mood);
+  const arm = ([x, y], s) => {
+    const d = up ? `M${x} ${y} q${s * 14} -6 ${s * 20} -36` : `M${x} ${y} q${s * 16} 8 ${s * 16} 34`;
+    const hx = x + s * (up ? 20 : 16), hy = y + (up ? -36 : 34);
+    return `<g class="m-arm m-arm-${s < 0 ? 'l' : 'r'}" style="transform-origin:${x + 10}px ${y + 14}px">` +
+      `<path d="${d}" stroke="${c}" stroke-width="8" stroke-linecap="round" fill="none"/><circle cx="${hx}" cy="${hy}" r="7.5" fill="${c}"/></g>`;
+  };
+  const leg = (x, s) => `<path class="m-leg m-leg-${s < 0 ? 'l' : 'r'}" d="M${x} ${m.bottom - 8} L${x} 194 L${x + s * 10} 194" stroke="${c}" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  return {
+    back: leg(m.hips[0], -1) + leg(m.hips[1], 1),
+    front: arm(m.arms[0], -1) + arm(m.arms[1], 1)
+  };
+}
 
 /* Expressions : yeux + bouche */
 const MOODS = {
@@ -73,10 +106,10 @@ function mEyes(kind, { x, ey, d, f }) {
     case 'closed': return both(c => `<path d="M${c - r(12)} ${ey} Q${c} ${ey + r(13)} ${c + r(12)} ${ey}" ${ST}/>`);
     case 'arc':    return both(c => `<path d="M${c - r(10)} ${ey + r(4)} Q${c} ${ey - r(10)} ${c + r(10)} ${ey + r(4)}" ${ST}/>`);
     case 'dots':   return both(c => `<circle cx="${c}" cy="${ey + r(4)}" r="${r(7)}" fill="${INK}"/>`);
-    case 'big':    return both(c => `<circle cx="${c}" cy="${ey}" r="${r(16)}" fill="#fff" stroke="${INK}" stroke-width="5"/><circle cx="${c}" cy="${ey}" r="${r(7)}" fill="${INK}"/>`);
-    case 'up':     return both(c => `<circle cx="${c}" cy="${ey}" r="${r(16)}" fill="#fff" stroke="${INK}" stroke-width="5"/><circle cx="${c}" cy="${ey - r(5)}" r="${r(7)}" fill="${INK}"/>`);
+    case 'big':    return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c + r(2)}" cy="${ey + r(1)}" r="${r(8)}" fill="${INK}"/>`);
+    case 'up':     return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c}" cy="${ey - r(6)}" r="${r(8)}" fill="${INK}"/>`);
     case 'x':      return both((c, s) => `<path d="M${c - s * r(10)} ${ey - r(11)} L${c + s * r(9)} ${ey} L${c - s * r(10)} ${ey + r(11)}" ${ST}/>`);
-    case 'angry':  return both((c, s) => `<path d="M${c + s * r(14)} ${ey - r(22)} L${c - s * r(10)} ${ey - r(12)}" ${ST}/><circle cx="${c}" cy="${ey + r(4)}" r="${r(7)}" fill="${INK}"/>`);
+    case 'angry':  return both((c, s) => `<circle cx="${c}" cy="${ey + r(2)}" r="${r(15)}" fill="#fff"/><circle cx="${c - s * r(3)}" cy="${ey + r(5)}" r="${r(7)}" fill="${INK}"/><path d="M${c + s * r(18)} ${ey - r(20)} L${c - s * r(14)} ${ey - r(8)}" stroke="${INK}" stroke-width="8" stroke-linecap="round"/>`);
     case 'wink':   return `<path d="M${L - r(10)} ${ey + r(4)} Q${L} ${ey - r(10)} ${L + r(10)} ${ey + r(4)}" ${ST}/><circle cx="${R}" cy="${ey + r(3)}" r="${r(7)}" fill="${INK}"/>`;
     default: return '';
   }
@@ -105,6 +138,7 @@ function mascot(name, o = {}) {
   const m = MASCOTS[name] || MASCOTS.zen;
   const mood = o.mood && MOODS[o.mood] ? o.mood : m.own;
   const [eyes, mouth] = MOODS[mood];
+  const limbs = mLimbs(m, mood);
   const anim = o.anim || (mood === 'sleep' ? 'sleep' : 'bob');
   const size = o.size || 56;
   const delay = ((mascotSeq++ * 0.37) % 2.4).toFixed(2);
@@ -113,7 +147,7 @@ function mascot(name, o = {}) {
     ? '<g class="m-zzz" aria-hidden="true"><text x="150" y="40">z</text><text x="170" y="18">z</text></g>' : '';
   const a11y = o.label ? `role="img" aria-label="${esc(o.label)}"` : 'aria-hidden="true"';
   return `<span class="mascot m-${anim} m-${name} ${o.cls || ''}" style="--s:${size}px;--d:${delay}s" ${a11y}>` +
-    `<svg viewBox="-10 -14 220 220" focusable="false"><g class="m-all"><g class="m-body">${m.body}</g>` +
+    `<svg viewBox="-10 -14 220 220" focusable="false"><g class="m-all">${limbs.back}<g class="m-body">${m.body(m.color)}</g>${limbs.front}` +
     `<g class="m-eyes${blink}">${mEyes(eyes, m.face)}</g><g class="m-mouth">${mMouth(mouth, m.face)}</g></g>${zzz}</svg></span>`;
 }
 
@@ -178,11 +212,11 @@ function faceForScore(ratio, size, rotate = 0) {
 
 const MASCOT_INFO = {
   zen:    { name: 'Zen',    tagline: 'Toujours calme, rien ne le stresse' },
-  zap:    { name: 'Zap',    tagline: 'Plein d’énergie, rapide comme l’éclair' },
+  zap:    { name: 'Zap',    tagline: 'Une étoile pleine d’énergie' },
   wow:    { name: 'Wow',    tagline: 'Curieux de tout, toujours épaté' },
   grr:    { name: 'Grr',    tagline: 'Râleur… mais avec un grand cœur' },
-  snooze: { name: 'Snooze', tagline: 'Champion de la sieste' },
-  meh:    { name: 'Meh',    tagline: 'Un peu timide, mais très attachant' },
+  snooze: { name: 'Snooze', tagline: 'Un nuage champion de la sieste' },
+  meh:    { name: 'Plouf',  tagline: 'Une goutte timide mais attachante' },
   ouch:   { name: 'Ouch',   tagline: 'Un peu maladroit, jamais découragé' }
 };
 
