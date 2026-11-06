@@ -61,34 +61,30 @@ async function viewStudentHome() {
     const steps = weekSteps(week.id);
     const p = progressOf(steps, S.subs);
     const next = steps.find(i => !isItemDone(i, S.subs[i.id]));
-    const mood = !p.total || !p.done ? 'wink' : p.done === p.total ? 'happy' : 'proud';
     weekCard = `
-      <a class="play-card" href="#/semaine/${week.id}">
-        ${sparkles()}
-        <div class="play-title"><span>${week.title ? esc(week.title) : 'Ma semaine'}</span></div>
-        <p class="play-meta"><span class="dot"></span>${p.done} / ${p.total} étapes faites · ${isCurrentWeek(week) ? 'cette semaine' : 'dernière semaine'}</p>
-        <div class="seg-progress">${steps.map(i => `<span class="${isItemDone(i, S.subs[i.id]) ? 'on' : ''}"></span>`).join('')}</div>
-        <div class="play-hero">${mascot(me, { mood, size: 230, anim: p.total && p.done === p.total ? 'bounce' : 'bob' })}</div>
-        <span class="play-cta">${!next ? 'Revoir ma semaine' : p.done ? 'Continuer' : 'C’est parti'} ${icon('play')}</span>
-      </a>
-      ${next ? `<p class="next-line">Prochaine étape : <strong>${esc(next.title)}</strong></p>` : '<p class="next-line cheer">Tout est fait, bravo !</p>'}`;
+      <a class="card current-week has-mascot" href="#/semaine/${week.id}">
+        <div class="card-mascot">${faceForProgress(p, 150, -14)}</div>
+        <p class="muted small">${isCurrentWeek(week) ? 'Cette semaine' : 'Dernière semaine'}</p>
+        <h2>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h2>
+        <div class="hero-progress-label"><strong>${p.done} / ${p.total} étapes</strong><span>${p.pct} %</span></div>
+        ${progressBar(p, { big: true })}
+        ${next ? `<p class="next-step">Prochaine étape : <strong>${esc(next.title)}</strong></p>` : '<p class="cheer">Tout est fait, bravo !</p>'}
+        <span class="cta">${!next ? 'Revoir' : p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">${icon('arrow-right')}</span></span>
+      </a>`;
   }
 
   return `
-    <div class="topchips">
-      ${gamiChips()}
+    <div class="hello">
+      <button class="hello-mascot" data-action="pick-mascot" title="Changer de personnage">${mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 84 })}</button>
+      <div>
+        <h1>Bonjour ${esc(firstName(student.name))} !</h1>
+        ${gamiChips()}
+      </div>
     </div>
-    <h1 class="display">On s’y met,<br>${esc(firstName(student.name))} ?</h1>
     ${fresh.length ? `<a class="card notice-card" href="#/progres">${icon('mail-check')}
-      <span><strong>${fresh.length === 1 ? 'Une nouvelle correction' : `${fresh.length} nouvelles corrections`}</strong><br><span class="small">Ton prof a corrigé ton travail</span></span>
+      <span><strong>${fresh.length === 1 ? 'Une nouvelle correction' : `${fresh.length} nouvelles corrections`}</strong><br><span class="muted small">Ton prof a corrigé ton travail</span></span>
       ${icon('chevron-right')}</a>` : ''}
     ${weekCard}`;
-}
-
-/** Petites étoiles décoratives */
-function sparkles() {
-  const star = (x, y, s, d) => `<svg class="sparkle" style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-delay:${d}s" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0C11 6 14 9 20 10C14 11 11 14 10 20C9 14 6 11 0 10C6 9 9 6 10 0Z" fill="#fff"/></svg>`;
-  return star(10, 44, 18, 0) + star(84, 38, 14, .8) + star(78, 62, 22, 1.4) + star(16, 70, 12, .4);
 }
 
 function seenCorrections() {
@@ -115,11 +111,11 @@ async function viewStudentWeek(wid) {
     <nav class="crumbs"><a href="#/">${icon('arrow-left')} Accueil</a></nav>
     <div class="week-head">
       <p class="muted small">${esc(weekLabel(week))}</p>
-      <h1 class="display">${week.title ? esc(week.title) : 'Ma semaine'}</h1>
+      <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
       <div class="hero-progress">${heroProgress(p)}</div>
     </div>
     ${week.message ? `<div class="card teacher-card">${mascotFace('happy', { size: 54, rotate: -8 })}<div><span class="muted small">Message de ton prof</span><div>${rich(week.message)}</div></div></div>` : ''}
-    ${steps.length ? `<ol class="steps week-steps">${steps.map((it, i) => {
+    ${steps.length ? `<ol class="steps">${steps.map((it, i) => {
       const sub = S.subs[it.id];
       const done = isItemDone(it, sub);
       const [label, cls] = stepStatus(it, sub);
@@ -191,7 +187,7 @@ async function viewStudentProgress() {
   if (!items.length) return `<h1>Mes progrès</h1><div class="empty card">${mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 })}<p>Tes progrès apparaîtront ici.</p></div>`;
 
   return `
-    <h1 class="display">Mes progrès</h1>
+    <h1>Mes progrès</h1>
     ${gamiChips()}
     <div class="stat-row">
       <div class="card stat"><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>

@@ -176,9 +176,6 @@ async function closeLesson() {
 
 /* ---------- Rendu ---------- */
 
-const fmtSecs = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
-setInterval(() => { const el = document.getElementById('lesson-time'); if (el && L && L.phase !== 'end') el.textContent = fmtSecs((Date.now() - L.start) / 1000); }, 1000);
-
 function heartsLeft() {
   const wrong = Object.values(L.results).filter(r => r.checked && !r.correct).length;
   return Math.max(0, HEARTS - wrong);
@@ -197,8 +194,7 @@ function lessonRender() {
     <div class="lesson-inner">
       <header class="lesson-top">
         <button class="lesson-icon" data-action="lesson-close" aria-label="Fermer">${icon('x')}</button>
-        <div class="seg-progress lesson-seg" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">${qs.map((q, k) => `<span class="${L.results[q.id] ? (L.results[q.id].checked && !L.results[q.id].correct ? 'ko' : 'on') : k === L.idx && L.phase !== 'end' ? 'cur' : ''}"></span>`).join('')}</div>
-        <span class="timer-chip">${icon('timer')}<b id="lesson-time">${fmtSecs((Date.now() - L.start) / 1000)}</b></span>
+        <div class="lesson-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="lesson-bar-fill" style="width:${pct}%"></div></div>
         ${instant ? `<span class="hearts ${L.lost ? 'lost' : ''}" aria-label="${heartsLeft()} vies">${icon('heart')}<b>${heartsLeft()}</b></span>` : ''}
         <button class="lesson-icon" data-action="lesson-mute" aria-label="${muted ? 'Activer le son' : 'Couper le son'}" aria-pressed="${muted}">${icon(muted ? 'volume-x' : 'volume-2')}</button>
       </header>
@@ -206,7 +202,6 @@ function lessonRender() {
       <footer class="lesson-foot ${L.phase === 'feedback' ? L.fb : ''}">${footHtml()}</footer>
     </div>`;
   L.lost = false;
-  el.classList.toggle('is-end', L.phase === 'end');
   hydrateFiles(el);
   updateCta();
   const inp = $('.lesson-input', el);
@@ -233,17 +228,17 @@ function questionHtml() {
         else cls = 'dim';
       }
       return `<button class="tile ${cls}" data-action="lesson-pick" data-j="${j}" ${locked ? 'disabled' : ''} aria-pressed="${String(sel) === String(j)}">
-        <span class="tile-key">${'ABCDEFGH'[j] || j + 1}</span><span class="tile-text">${esc(o)}</span></button>`;
+        <span class="tile-key">${j + 1}</span><span class="tile-text">${esc(o)}</span></button>`;
     }).join('')}</div>`;
   }
   const mood = r?.checked ? (r.correct ? 'happy' : 'sad') : r ? 'calm' : 'wink';
   return `
-    <div class="q-card q-c${L.idx % 4}">
-      <span class="q-mascot">${mascot(myMascot() || 'zap', { mood, size: 104, anim: r?.checked && r.correct ? 'bounce' : 'bob' })}</span>
-      <p class="lesson-kicker">Question ${L.idx + 1} sur ${qs.length}${L.it.subject ? ' · ' + esc(L.it.subject) : ''}</p>
-      <h2 class="q-prompt">${rich(q.prompt)}</h2>
-      ${input}
-    </div>`;
+    <p class="lesson-kicker">Question ${L.idx + 1} sur ${qs.length}${L.it.subject ? ' · ' + esc(L.it.subject) : ''}</p>
+    <div class="lesson-prompt">
+      <span class="lesson-mascot">${mascot(myMascot() || 'zap', { mood, size: 92, anim: r?.checked && r.correct ? 'bounce' : 'bob' })}</span>
+      <div class="bubble">${rich(q.prompt)}</div>
+    </div>
+    ${input}`;
 }
 
 function footHtml() {
@@ -287,8 +282,7 @@ function endHtml() {
   const streak = streakDays();
   return `
     <div class="lesson-end">
-      <span class="pts-chip">+${xpFor(it, sub)} XP !</span>
-      <div class="end-hero">${sparkles()}${mascot(myMascot() || 'zap', { mood, size: 190, anim: 'bounce' })}</div>
+      ${mascot(myMascot() || 'zap', { mood, size: 150, anim: 'bounce' })}
       <h2 class="end-title">${title}</h2>
       ${graded ? '' : '<p class="muted">Ton prof validera tes réponses, tu verras ton score ensuite.</p>'}
       <div class="end-stats">
