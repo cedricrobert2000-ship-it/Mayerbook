@@ -115,20 +115,63 @@ async function viewStudentWeek(wid) {
       <div class="hero-progress">${heroProgress(p)}</div>
     </div>
     ${week.message ? `<div class="card teacher-card">${mascotFace('happy', { size: 54, rotate: -8 })}<div><span class="muted small">Message de ton prof</span><div>${rich(week.message)}</div></div></div>` : ''}
-    ${steps.length ? `<ol class="steps">${steps.map((it, i) => {
-      const sub = S.subs[it.id];
-      const done = isItemDone(it, sub);
-      const [label, cls] = stepStatus(it, sub);
-      return `<li><a class="step type-${it.type} ${done ? 'done' : ''} ${i === nextIdx ? 'next' : ''}" href="#/semaine/${wid}/${it.id}">
-        <span class="step-num">${done ? icon('check') : i + 1}</span>
-        <span class="step-body">
-          <span class="step-type">${icon(TYPES[it.type].icon)} ${it.type === 'notion' ? 'Notion' : TYPES[it.type].label}${it.subject ? ' · ' + esc(it.subject) : ''}</span>
-          <strong>${esc(it.title)}</strong>
-        </span>
-        <span class="status ${cls}">${label}</span>
-      </a></li>`;
-    }).join('')}</ol>`
+    ${steps.length ? weekPath(wid, steps, nextIdx)
     : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
+}
+
+/* ---------- Le chemin de la semaine (façon jeu) ---------- */
+
+const PATH_SECTIONS = {
+  notion:   { title: 'Je révise',      icon: 'book-open' },
+  exercice: { title: 'Je m’entraîne',  icon: 'pencil' },
+  quiz:     { title: 'Je joue',        icon: 'zap' }
+};
+const ZIGZAG = [0, 64, 0, -64];
+
+function weekPath(wid, steps, nextIdx) {
+  const me = myMascot() || 'zen';
+  let k = 0;   // position globale dans le zigzag
+  const sections = TYPE_ORDER.map(type => {
+    const its = steps.filter(i => i.type === type);
+    if (!its.length) return '';
+    const done = its.filter(i => isItemDone(i, S.subs[i.id])).length;
+    const sec = PATH_SECTIONS[type];
+    const nodes = its.map((it, j) => {
+      const idx = steps.indexOf(it);
+      const sub = S.subs[it.id];
+      const isDone = isItemDone(it, sub);
+      const isNext = idx === nextIdx;
+      const x = ZIGZAG[k++ % ZIGZAG.length];
+      const [label, cls] = stepStatus(it, sub);
+      const side = x > 0 ? 'left' : 'right';
+      return `${j ? `<li class="path-dots" style="--x:${(x + ZIGZAG[(k - 2 + 4) % 4]) / 2}px" aria-hidden="true"><i></i><i></i><i></i></li>` : ''}
+        <li class="path-item" style="--x:${x}px">
+          <a class="path-node type-${it.type} ${isDone ? 'done' : isNext ? 'next' : 'todo'}" href="#/semaine/${wid}/${it.id}" aria-label="${esc(it.title)} : ${label}">
+            ${isNext ? `<span class="node-bubble">${idx === 0 ? 'Commence ici !' : 'C’est ici !'}</span>` : ''}
+            <span class="node-btn">${icon(isDone ? 'check' : TYPES[it.type].icon)}</span>
+            <span class="node-label">${esc(it.title)}</span>
+            ${isDone || cls !== 'todo' ? `<span class="node-status ${cls}">${label}</span>` : ''}
+          </a>
+          ${isNext ? `<span class="path-mascot ${side}">${mascot(me, { mood: 'happy', size: 76, anim: 'wiggle' })}</span>` : ''}
+        </li>`;
+    }).join('');
+    return `
+      <section class="path-section type-${type}">
+        <div class="path-head ${done === its.length ? 'complete' : ''}">
+          <span class="ph-icon">${icon(sec.icon)}</span>
+          <strong>${sec.title}</strong>
+          <span class="ph-count">${done === its.length ? icon('check') : ''}${done}/${its.length}</span>
+        </div>
+        <ol class="path">${nodes}</ol>
+      </section>`;
+  }).join('');
+  const allDone = nextIdx < 0;
+  return `<div class="week-path">${sections}
+    <div class="path-end ${allDone ? 'done' : ''}">
+      <span class="node-btn">${icon('trophy')}</span>
+      <span class="node-label">${allDone ? 'Semaine terminée, bravo !' : 'Le trophée de la semaine'}</span>
+      ${allDone ? mascot(me, { mood: 'proud', size: 90, anim: 'bounce' }) : ''}
+    </div></div>`;
 }
 
 function heroProgress(p) {
