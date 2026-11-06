@@ -84,7 +84,7 @@ async function viewTutorHome() {
       </a>`;
   }).join('');
 
-  return head + chips + `<div class="grid">${cards}</div>`;
+  return head + chips + `<div class="grid">${cards}</div>` + themeSwitcher();
 }
 
 /* ---------- Fiche élève ---------- */

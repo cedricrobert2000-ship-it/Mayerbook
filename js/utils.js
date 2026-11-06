@@ -376,3 +376,25 @@ function downloadFile(filename, content, type = 'application/json') {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
+
+
+/* ---------- Apparence : auto / clair / sombre ---------- */
+function themePref() { try { return localStorage.getItem('mayerbook:theme') || 'auto'; } catch { return 'auto'; } }
+function applyTheme(pref = themePref()) {
+  const t = pref === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : pref;
+  document.documentElement.setAttribute('data-theme', t);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', t === 'light' ? '#F6F2EC' : '#0B0812');
+}
+function setTheme(pref) {
+  try { localStorage.setItem('mayerbook:theme', pref); } catch { /* ignore */ }
+  applyTheme(pref);
+  $$('.theme-switch button').forEach(b => b.classList.toggle('on', b.dataset.theme === pref));
+}
+matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { if (themePref() === 'auto') applyTheme('auto'); });
+
+function themeSwitcher() {
+  const cur = themePref();
+  const opt = (v, ico, label) => `<button type="button" data-action="set-theme" data-theme="${v}" class="${cur === v ? 'on' : ''}">${icon(ico)} ${label}</button>`;
+  return `<div class="theme-card"><h3>Apparence</h3><div class="theme-switch" role="group" aria-label="Apparence">
+    ${opt('auto', 'smartphone', 'Auto')}${opt('light', 'sun', 'Clair')}${opt('dark', 'moon', 'Sombre')}</div></div>`;
+}

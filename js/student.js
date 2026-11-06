@@ -227,7 +227,7 @@ async function viewStudentProgress() {
     if (it.type === 'quiz' && sub?.status === 'corrige' && sub.total) b.qs.push(sub.score / sub.total);
   }
 
-  if (!items.length) return `<h1>Mes progrès</h1><div class="empty card">${mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 })}<p>Tes progrès apparaîtront ici.</p></div>`;
+  if (!items.length) return `<h1>Mes progrès</h1><div class="empty card">${mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 })}<p>Tes progrès apparaîtront ici.</p></div>${themeSwitcher()}`;
 
   return `
     <h1>Mes progrès</h1>
@@ -262,7 +262,8 @@ async function viewStudentProgress() {
       return `<a class="card week-row" href="#/semaine/${w.id}">
         <div class="week-row-main"><h3>${esc(weekLabel(w))}</h3>${w.title ? `<p class="muted">${esc(w.title)}</p>` : ''}</div>
         <div class="week-row-side"><span class="pct">${p.pct >= 100 ? icon('check') : ''}${p.pct} %</span>${progressBar(p)}</div></a>`;
-    }).join('')}`;
+    }).join('')}
+    ${themeSwitcher()}`;
 }
 
 /* ---------- Contenu d'une étape ---------- */

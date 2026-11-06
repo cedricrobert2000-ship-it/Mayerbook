@@ -427,6 +427,7 @@ const Actions = {
   'sheet-correction': d => openCorrectionSheet(d.iid),
   'sheet-redo': d => openRedoSheet(d.iid),
   'pick-week': () => openWeekPicker(),
+  'set-theme': d => setTheme(d.theme),
   'close-modal-link': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); }
 };
 
