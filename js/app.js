@@ -162,8 +162,7 @@ async function renderTopbar() {
     const current = weeks.find(isCurrentWeek) || weeks[0];
     const onWeek = path.startsWith('/semaine');
     const onProg = path.startsWith('/progres');
-    html = item('#/', icon('house'), 'Accueil', !onWeek && !onProg)
-      + (current ? item(`#/semaine/${current.id}`, icon('calendar-days'), 'Ma semaine', onWeek) : '')
+    html = item('#/', icon('house'), 'Ma semaine', !onProg)
       + item('#/progres', icon('trending-up'), 'Progrès', onProg)
       + logout;
   }
@@ -426,7 +425,9 @@ const Actions = {
   'st-quiz-open': d => { S.openQuiz[d.iid] = true; refreshStudentItem(d.iid); },
   'st-submit': (d, el) => studentSubmit(d.iid, el),
   'sheet-correction': d => openCorrectionSheet(d.iid),
-  'sheet-redo': d => openRedoSheet(d.iid)
+  'sheet-redo': d => openRedoSheet(d.iid),
+  'pick-week': () => openWeekPicker(),
+  'close-modal-link': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); }
 };
 
 document.addEventListener('click', e => {

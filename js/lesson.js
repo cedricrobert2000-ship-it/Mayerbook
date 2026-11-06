@@ -51,6 +51,27 @@ function streakDays() {
   return n;
 }
 
+/** Série et XP en grand (accueil, progrès). */
+function gamiHero() {
+  const streak = streakDays();
+  const xp = studentXp();
+  const level = Math.floor(xp / 100) + 1;
+  const inLevel = xp % 100;
+  return `<div class="gami-hero">
+    <div class="gh-tile streak ${streak ? 'on' : 'off'}">
+      <span class="gh-icon">${icon('flame')}</span>
+      <span class="gh-num">${streak}</span>
+      <span class="gh-label">${streak ? (streak > 1 ? 'jours d’affilée' : 'jour de suite') : 'Allume ta flamme !'}</span>
+    </div>
+    <div class="gh-tile xp">
+      <span class="gh-icon">${icon('zap')}</span>
+      <span class="gh-num">${xp}<small> XP</small></span>
+      <span class="gh-label">Niveau ${level}</span>
+      <span class="gh-bar" title="Encore ${100 - inLevel} XP pour le niveau ${level + 1}"><i style="width:${Math.max(4, inLevel)}%"></i></span>
+    </div>
+  </div>`;
+}
+
 function gamiChips() {
   const streak = streakDays();
   return `<div class="gami">

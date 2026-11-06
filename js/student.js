@@ -48,43 +48,58 @@ function stepStatus(it, sub) {
 
 /* ---------- Accueil ---------- */
 
-async function viewStudentHome() {
+async function viewStudentHome(wid = null) {
   await loadStudentData();
-  const { student } = S.data;
-  const week = currentWeek();
+  const { student, weeks } = S.data;
+  const week = (wid && weeks.find(w => w.id === wid)) || currentWeek();
+  if (wid && !weeks.find(w => w.id === wid)) return notFound();
   const seen = seenCorrections();
   const fresh = correctedItems().filter(i => !seen.includes(S.subs[i.id].id));
   const me = myMascot() || 'zap';
 
-  let weekCard = '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>';
-  if (week) {
-    const steps = weekSteps(week.id);
-    const p = progressOf(steps, S.subs);
-    const next = steps.find(i => !isItemDone(i, S.subs[i.id]));
-    weekCard = `
-      <a class="card current-week has-mascot" href="#/semaine/${week.id}">
-        <div class="card-mascot">${faceForProgress(p, 150, -14)}</div>
-        <p class="muted small">${isCurrentWeek(week) ? 'Cette semaine' : 'Dernière semaine'}</p>
-        <h2>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h2>
-        <div class="hero-progress-label"><strong>${p.done} / ${p.total} étapes</strong><span>${p.pct} %</span></div>
-        ${progressBar(p, { big: true })}
-        ${next ? `<p class="next-step">Prochaine étape : <strong>${esc(next.title)}</strong></p>` : '<p class="cheer">Tout est fait, bravo !</p>'}
-        <span class="cta">${!next ? 'Revoir' : p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">${icon('arrow-right')}</span></span>
-      </a>`;
-  }
-
-  return `
-    <div class="hello">
-      <button class="hello-mascot" data-action="pick-mascot" title="Changer de personnage">${mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 84 })}</button>
-      <div>
-        <h1>Bonjour ${esc(firstName(student.name))} !</h1>
-        ${gamiChips()}
-      </div>
-    </div>
+  const head = `
+    <h1 class="hello-title">Bonjour ${esc(firstName(student.name))} !</h1>
+    ${gamiHero()}
     ${fresh.length ? `<a class="card notice-card" href="#/progres">${icon('mail-check')}
       <span><strong>${fresh.length === 1 ? 'Une nouvelle correction' : `${fresh.length} nouvelles corrections`}</strong><br><span class="muted small">Ton prof a corrigé ton travail</span></span>
-      ${icon('chevron-right')}</a>` : ''}
-    ${weekCard}`;
+      ${icon('chevron-right')}</a>` : ''}`;
+
+  if (!week) {
+    return head + '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>';
+  }
+
+  const steps = weekSteps(week.id);
+  const p = progressOf(steps, S.subs);
+  const nextIdx = steps.findIndex(i => !isItemDone(i, S.subs[i.id]));
+  const left = p.total - p.done;
+  const when = isCurrentWeek(week) ? 'Cette semaine' : weekLabel(week);
+
+  return `${head}
+    <div class="week-stage">
+      <button class="stage-mascot" data-action="pick-mascot" aria-label="Changer de personnage">${mascot(me, { mood: left ? 'happy' : 'proud', size: 250, anim: 'peek' })}</button>
+      <div class="card current-week week-card">
+        ${weeks.length > 1 ? `<button class="week-switch" data-action="pick-week">${icon('calendar-days')} ${esc(when)} ${icon('chevron-down')}</button>` : `<p class="muted small">${esc(when)}</p>`}
+        <h2>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h2>
+        <div class="hero-progress-label"><strong>${left ? (left === 1 ? 'Plus qu’une étape !' : `Plus que ${left} étapes !`) : 'Tout est fait, bravo !'}</strong><span>${p.done} / ${p.total}</span></div>
+        ${progressBar(p, { big: true })}
+        ${week.message ? `<div class="week-msg">${icon('message-circle')}<div>${rich(week.message)}</div></div>` : ''}
+      </div>
+    </div>
+    ${steps.length ? weekPath(week.id, steps, nextIdx)
+      : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
+}
+
+/** Choisir une autre semaine (bottom sheet). */
+function openWeekPicker() {
+  const cur = location.hash.match(/semaine\/([^/?]+)/)?.[1] || currentWeek()?.id;
+  openSheet(`
+    <div class="sheet-head"><div><h2>Mes semaines</h2></div></div>
+    <div class="week-list">${S.data.weeks.map(w => {
+      const p = progressOf(weekSteps(w.id), S.subs);
+      return `<a class="week-pick ${w.id === cur ? 'on' : ''}" href="${w.id === currentWeek()?.id ? '#/' : `#/semaine/${w.id}`}" data-action="close-modal-link">
+        <span class="grow"><strong>${isCurrentWeek(w) ? 'Cette semaine' : esc(weekLabel(w))}</strong>${w.title ? `<span class="small muted">${esc(w.title)}</span>` : ''}</span>
+        <span class="wp-pct ${p.pct >= 100 ? 'full' : ''}">${p.pct >= 100 ? icon('check') : ''}${p.pct} %</span></a>`;
+    }).join('')}</div>`);
 }
 
 function seenCorrections() {
@@ -99,25 +114,7 @@ function markSeen(subIds) {
 
 /* ---------- Ma semaine : la liste des étapes ---------- */
 
-async function viewStudentWeek(wid) {
-  await loadStudentData();
-  const week = S.data.weeks.find(w => w.id === wid);
-  if (!week) return notFound();
-  const steps = weekSteps(wid);
-  const p = progressOf(steps, S.subs);
-  const nextIdx = steps.findIndex(i => !isItemDone(i, S.subs[i.id]));
-
-  return `
-    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Accueil</a></nav>
-    <div class="week-head">
-      <p class="muted small">${esc(weekLabel(week))}</p>
-      <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
-      <div class="hero-progress">${heroProgress(p)}</div>
-    </div>
-    ${week.message ? `<div class="card teacher-card">${mascotFace('happy', { size: 54, rotate: -8 })}<div><span class="muted small">Message de ton prof</span><div>${rich(week.message)}</div></div></div>` : ''}
-    ${steps.length ? weekPath(wid, steps, nextIdx)
-    : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
-}
+async function viewStudentWeek(wid) { return viewStudentHome(wid); }
 
 /* ---------- Le chemin de la semaine (façon jeu) ---------- */
 
@@ -194,14 +191,14 @@ async function viewStudentItem(wid, iid) {
   if (sub?.status === 'corrige') markSeen([sub.id]);
   const prev = steps[i - 1], next = steps[i + 1];
   return `
-    <nav class="crumbs step-crumbs"><a href="#/semaine/${wid}">${icon('arrow-left')} Ma semaine</a><span class="muted small">Étape ${i + 1} sur ${steps.length}</span></nav>
+    <nav class="crumbs step-crumbs"><a href="${wid === currentWeek()?.id ? '#/' : `#/semaine/${wid}`}">${icon('arrow-left')} Ma semaine</a><span class="muted small">Étape ${i + 1} sur ${steps.length}</span></nav>
     <div class="step-dots" aria-hidden="true">${steps.map((s, k) => `<span class="${k === i ? 'on' : ''} ${isItemDone(s, S.subs[s.id]) ? 'done' : ''}"></span>`).join('')}</div>
     <div class="slide-type type-${it.type}"><span class="type-chip">${icon(TYPES[it.type].icon)} ${TYPES[it.type].label}</span></div>
     ${studentItem(it)}
     <div class="step-nav">
       ${prev ? `<a class="btn big" href="#/semaine/${wid}/${prev.id}">${icon('chevron-left')} Précédent</a>` : '<span></span>'}
       ${next ? `<a class="btn primary big" href="#/semaine/${wid}/${next.id}">Suivant ${icon('chevron-right')}</a>`
-        : `<a class="btn primary big" href="#/semaine/${wid}">${icon('check')} Terminer</a>`}
+        : `<a class="btn primary big" href="${wid === currentWeek()?.id ? '#/' : `#/semaine/${wid}`}">${icon('check')} Terminer</a>`}
     </div>`;
 }
 
@@ -232,7 +229,7 @@ async function viewStudentProgress() {
 
   return `
     <h1>Mes progrès</h1>
-    ${gamiChips()}
+    ${gamiHero()}
     <div class="stat-row">
       <div class="card stat"><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
       <div class="card stat"><span class="stat-num">${qAvg === null ? '—' : qAvg + ' %'}</span><span class="muted small">moyenne aux quiz</span></div>

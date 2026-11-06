@@ -1943,3 +1943,67 @@ dialog.sheet > .btn.block { margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) {
   .wk-card, .wk-card.next::before, .wk-card.next .wk-cta, .wk-card.next .wk-now { animation: none !important; }
 }
+
+
+/* =========================================================
+   Série et XP en grand
+   ========================================================= */
+.hello-title { margin: 6px 0 14px; font-size: 1.9rem; }
+.gami-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.gh-tile {
+  position: relative; overflow: hidden; display: grid; gap: 2px; padding: 16px 16px 14px; border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border);
+}
+.gh-icon { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 4px; }
+.gh-icon .icon { width: 42px; height: 42px; }
+.gh-num { font-family: var(--font-display); font-size: 2.6rem; line-height: 1; letter-spacing: .01em; }
+.gh-num small { font-size: 1rem; color: var(--muted); }
+.gh-label { font-size: .85rem; font-weight: 600; color: var(--muted); }
+
+/* Flamme : orange vif qui vacille quand la série est en cours */
+.gh-tile.streak.on { border-color: rgb(255 140 40 / .45); background: radial-gradient(120% 90% at 20% 0%, rgb(255 120 30 / .28), transparent 60%), color-mix(in srgb, var(--surface) 92%, transparent); }
+.gh-tile.streak.on .gh-icon .icon { color: #FF8A1F; fill: #FFC23D; filter: drop-shadow(0 0 12px rgb(255 140 40 / .8)); transform-origin: 50% 90%; animation: flame 1.4s ease-in-out infinite; }
+.gh-tile.streak.on .gh-num { color: #FFB25A; }
+.gh-tile.streak.off .gh-icon .icon { color: #5E5570; }
+@keyframes flame { 0%, 100% { transform: scale(1) rotate(-3deg); } 30% { transform: scale(1.08, 1.12) rotate(3deg); } 60% { transform: scale(.96, 1.02) rotate(-1deg); } }
+
+/* XP : jaune électrique + barre de niveau */
+.gh-tile.xp { border-color: rgb(255 210 31 / .35); background: radial-gradient(120% 90% at 20% 0%, rgb(255 210 31 / .2), transparent 60%), color-mix(in srgb, var(--surface) 92%, transparent); }
+.gh-tile.xp .gh-icon .icon { color: #FFD21F; fill: #FFE680; filter: drop-shadow(0 0 12px rgb(255 210 31 / .7)); animation: zap-pulse 2.4s ease-in-out infinite; }
+.gh-tile.xp .gh-num { color: #FFE27A; }
+@keyframes zap-pulse { 0%, 80%, 100% { transform: scale(1); } 88% { transform: scale(1.18) rotate(-8deg); } }
+.gh-bar { display: block; height: 8px; border-radius: 999px; background: rgb(255 255 255 / .1); margin-top: 8px; overflow: hidden; }
+.gh-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #FFE27A, #FFB800); box-shadow: 0 0 10px rgb(255 200 0 / .6); }
+@media (prefers-reduced-motion: reduce) { .gh-icon .icon { animation: none !important; } }
+
+/* Le personnage en très grand derrière la carte, seule la tête dépasse */
+.week-stage { position: relative; padding-top: 150px; margin-top: 4px; }
+.stage-mascot { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 0; border: 0; background: none; padding: 0; cursor: pointer; }
+.week-stage .current-week { position: relative; z-index: 1; background: #17121F !important; padding-right: 20px; }
+.gh-tile { grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; padding: 14px; }
+.gh-icon { grid-row: span 2; margin: 0; }
+.gh-num { font-size: 2.3rem; }
+.gh-label { grid-column: 2; }
+.gh-bar { grid-column: 1 / -1; }
+.week-stage { padding-top: 168px; }
+
+
+/* =========================================================
+   Accueil = ma semaine
+   ========================================================= */
+.week-card h2 { margin: 6px 0 10px; }
+.week-switch {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--page-surface-2, #231C2E); color: var(--page-text, #fff); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+}
+.week-switch .icon { width: 16px; height: 16px; }
+.week-msg { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px; border-radius: 16px; background: #231C2E; font-size: .95rem; }
+.week-msg > .icon { flex: none; color: var(--primary); margin-top: 2px; }
+.week-list { display: grid; gap: 8px; margin-bottom: 8px; }
+.week-pick { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--surface-2); color: var(--text); text-decoration: none; border: 1px solid transparent; }
+.week-pick .grow { flex: 1; display: grid; }
+.week-pick.on { border-color: var(--primary); }
+.wp-pct { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: var(--muted); }
+.wp-pct.full { color: var(--ok); }
+.wp-pct .icon { width: 14px; height: 14px; }
+.week-card .week-switch { width: auto !important; max-width: 100%; text-align: left; }
