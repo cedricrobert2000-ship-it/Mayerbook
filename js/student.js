@@ -1,13 +1,15 @@
 'use strict';
 
 /* =========================================================
-   Espace élève
+   Espace élève — pages simples :
+   Accueil → Ma semaine (liste des étapes) → une page par étape
+   + Mes progrès
    ========================================================= */
 
 const S = {
   data: null,        // { student, weeks, items, subs }
   subs: {},          // par item_id
-  solutions: {},     // corrigés reçus (après correction)
+  solutions: {},     // corrigés reçus (après envoi)
   openQuiz: {},
   saveTimers: {}
 };
@@ -17,101 +19,72 @@ async function loadStudentData() {
   S.subs = indexBy(S.data.subs, 'item_id');
 }
 
-/* ---------- Accueil : mon suivi ---------- */
+const currentWeek = () => S.data.weeks.find(isCurrentWeek) || S.data.weeks[0];
+
+/** Étapes d'une semaine dans l'ordre : notions, exercices, quiz. */
+function weekSteps(wid) {
+  const items = S.data.items.filter(i => i.week_id === wid);
+  return TYPE_ORDER.flatMap(t => items.filter(i => i.type === t));
+}
+
+function correctedItems() {
+  return S.data.items
+    .filter(i => i.type !== 'notion' && S.subs[i.id]?.status === 'corrige')
+    .sort((a, b) => String(S.subs[b.id].corrected_at).localeCompare(String(S.subs[a.id].corrected_at)));
+}
+
+/** Petit état lisible d'une étape (pour la liste). */
+function stepStatus(it, sub) {
+  if (it.type === 'notion') return sub?.understood ? ['Compris', 'ok'] : ['À lire', 'todo'];
+  if (sub?.status === 'corrige') {
+    if (it.type === 'quiz' && sub.total) return [`${sub.score}/${sub.total}`, sub.score === sub.total ? 'ok' : sub.score >= sub.total / 2 ? 'mid' : 'ko'];
+    return [sub.grade ? `Corrigé · ${sub.grade}` : 'Corrigé', 'ok'];
+  }
+  if (sub?.status === 'envoye') return ['Envoyé', 'mid'];
+  if (sub?.feedback) return ['À refaire', 'ko'];
+  const started = sub && (sub.answer || sub.files?.length || Object.keys(sub.answers || {}).length);
+  return started ? ['Commencé', 'todo'] : ['À faire', 'todo'];
+}
+
+/* ---------- Accueil ---------- */
 
 async function viewStudentHome() {
   await loadStudentData();
-  const { student, weeks, items } = S.data;
-  const itemsBy = groupBy(items, 'week_id');
-  const current = weeks.find(isCurrentWeek) || weeks[0];
-
-  const exos = items.filter(i => i.type === 'exercice');
-  const quizzes = items.filter(i => i.type === 'quiz');
-  const exDone = exos.filter(i => isItemDone(i, S.subs[i.id])).length;
-  const qGraded = quizzes.map(i => S.subs[i.id]).filter(x => x?.status === 'corrige' && x.total);
-  const qAvg = qGraded.length ? Math.round(100 * qGraded.reduce((a, x) => a + x.score / x.total, 0) / qGraded.length) : null;
-
-  // Corrections reçues (les plus récentes d'abord)
-  const corrected = items
-    .filter(i => i.type !== 'notion' && S.subs[i.id]?.status === 'corrige')
-    .sort((a, b) => String(S.subs[b.id].corrected_at).localeCompare(String(S.subs[a.id].corrected_at)));
+  const { student } = S.data;
+  const week = currentWeek();
   const seen = seenCorrections();
-  const fresh = corrected.filter(i => !seen.includes(S.subs[i.id].id));
+  const fresh = correctedItems().filter(i => !seen.includes(S.subs[i.id].id));
+  const me = myMascot() || 'zap';
 
-  // Par matière
-  const bySubject = {};
-  for (const it of items) {
-    const k = it.subject || 'Autre';
-    const b = bySubject[k] ||= { total: 0, done: 0, qs: [] };
-    b.total++;
-    if (isItemDone(it, S.subs[it.id])) b.done++;
-    const sub = S.subs[it.id];
-    if (it.type === 'quiz' && sub?.status === 'corrige' && sub.total) b.qs.push(sub.score / sub.total);
-  }
-
-  let currentCard = '';
-  if (current) {
-    const its = itemsBy[current.id] || [];
-    const p = progressOf(its, S.subs);
-    const todo = its.filter(i => !isItemDone(i, S.subs[i.id]));
-    currentCard = `
-      <a class="card current-week has-mascot" href="#/semaine/${current.id}">
-        <div class="card-mascot">${faceForProgress(p, 176, -14)}</div>
-        <p class="muted small">${isCurrentWeek(current) ? 'Cette semaine' : 'Dernière semaine'} · ${esc(weekLabel(current))}</p>
-        <h2>${current.title ? esc(current.title) : 'Mon travail de la semaine'}</h2>
-        ${current.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(current.message)}</div>` : ''}
-        <div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>
-        ${progressBar(p)}
-        ${todo.length ? `<ul class="todo">${todo.slice(0, 5).map(i => `<li>${icon(TYPES[i.type].icon)} ${esc(i.title)}</li>`).join('')}${todo.length > 5 ? `<li class="muted">… et ${todo.length - 5} autre(s)</li>` : ''}</ul>`
-          : '<p class="cheer">Tout est fait cette semaine, bravo !</p>'}
-        <span class="cta">${p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">${icon('arrow-right')}</span></span>
+  let weekCard = '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>';
+  if (week) {
+    const steps = weekSteps(week.id);
+    const p = progressOf(steps, S.subs);
+    const next = steps.find(i => !isItemDone(i, S.subs[i.id]));
+    weekCard = `
+      <a class="card current-week has-mascot" href="#/semaine/${week.id}">
+        <div class="card-mascot">${faceForProgress(p, 150, -14)}</div>
+        <p class="muted small">${isCurrentWeek(week) ? 'Cette semaine' : 'Dernière semaine'}</p>
+        <h2>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h2>
+        <div class="hero-progress-label"><strong>${p.done} / ${p.total} étapes</strong><span>${p.pct} %</span></div>
+        ${progressBar(p, { big: true })}
+        ${next ? `<p class="next-step">Prochaine étape : <strong>${esc(next.title)}</strong></p>` : '<p class="cheer">Tout est fait, bravo !</p>'}
+        <span class="cta">${!next ? 'Revoir' : p.done ? 'Continuer' : 'Commencer'}<span class="cta-arrow">${icon('arrow-right')}</span></span>
       </a>`;
   }
 
   return `
-    <div class="hero">
-      <h1>Bonjour ${esc(firstName(student.name))} <button class="mascot-btn" data-action="pick-mascot" title="Changer de personnage">${mascot(myMascot() || 'zap', { mood: myMascot() === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 48 })}</button></h1>
-      <p class="muted">${esc(student.level)} · ${(student.subjects || []).map(subjectTag).join(' ')}</p>
-      ${gamiChips()}
-    </div>
-
-    ${fresh.length ? `
-      <div class="card new-corrections">
-        <h3 class="nc-head"><span>${icon('mail-check')} ${fresh.length === 1 ? 'Nouvelle correction' : `${fresh.length} nouvelles corrections`}</span></h3>
-        ${fresh.map(i => `<a class="corr-link" href="#/semaine/${i.week_id}?item=${i.id}">${icon(TYPES[i.type].icon)} ${esc(i.title)}
-          ${S.subs[i.id].grade ? `<span class="status ok">${esc(S.subs[i.id].grade)}</span>` : i.type === 'quiz' ? `<span class="status ok">${S.subs[i.id].score}/${S.subs[i.id].total}</span>` : ''}</a>`).join('')}
-      </div>` : ''}
-
-    ${currentCard || '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Ton prof n’a pas encore publié de travail. Reviens bientôt !</p></div>'}
-
-    ${items.length ? `
-      <h2 class="section-title">${icon('trending-up')} Mon suivi</h2>
-      <div class="stat-row">
-        <div class="card stat"><span class="stat-mascot">${mascotFace(exDone ? 'happy' : 'meh', { size: 84, rotate: 16 })}</span><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
-        <div class="card stat"><span class="stat-mascot">${qAvg === null ? mascotFace('sleep', { size: 112, rotate: -12, anim: 'sleep' }) : faceForScore(qAvg / 100, 112, -12)}</span><span class="stat-num">${qAvg === null ? '—' : qAvg + '%'}</span><span class="muted small">moyenne aux quiz</span></div>
-        <div class="card stat"><span class="stat-mascot">${mascotFace(corrected.length ? 'wow' : 'calm', { size: 98, rotate: 7 })}</span><span class="stat-num">${corrected.length}</span><span class="muted small">corrections reçues</span></div>
+    <div class="hello">
+      <button class="hello-mascot" data-action="pick-mascot" title="Changer de personnage">${mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 84 })}</button>
+      <div>
+        <h1>Bonjour ${esc(firstName(student.name))} !</h1>
+        ${gamiChips()}
       </div>
-      <div class="card">
-        <h3>Par matière</h3>
-        <div class="subject-rows">${Object.entries(bySubject).map(([k, b]) => {
-          const p = { pct: Math.round(100 * b.done / b.total) };
-          const avg = b.qs.length ? Math.round(100 * b.qs.reduce((a, x) => a + x, 0) / b.qs.length) : null;
-          return `<div class="subject-row">
-            <div class="subject-row-head"><strong>${esc(k)}</strong>
-              <span class="small muted">${b.done}/${b.total} fait${b.done > 1 ? 's' : ''}${avg === null ? '' : ` · quiz ${avg} %`}</span></div>
-            ${progressBar(p, { big: true, color: subjectColor(k) })}</div>`;
-        }).join('')}</div>
-      </div>` : ''}
-
-    ${weeks.length > 1 ? `
-      <h2 class="section-title">${icon('calendar-days')} Toutes mes semaines</h2>
-      ${weeks.map(w => {
-        const its = itemsBy[w.id] || [];
-        const p = progressOf(its, S.subs);
-        return `<a class="card week-row" href="#/semaine/${w.id}">
-          <div class="week-row-main"><h3>${esc(weekLabel(w))}</h3>${w.title ? `<p class="muted">${esc(w.title)}</p>` : ''}</div>
-          <div class="week-row-side"><span class="pct">${p.pct >= 100 ? icon('check') : ''}${p.pct} %</span>${progressBar(p)}</div></a>`;
-      }).join('')}` : ''}`;
+    </div>
+    ${fresh.length ? `<a class="card notice-card" href="#/progres">${icon('mail-check')}
+      <span><strong>${fresh.length === 1 ? 'Une nouvelle correction' : `${fresh.length} nouvelles corrections`}</strong><br><span class="muted small">Ton prof a corrigé ton travail</span></span>
+      ${icon('chevron-right')}</a>` : ''}
+    ${weekCard}`;
 }
 
 function seenCorrections() {
@@ -124,127 +97,132 @@ function markSeen(subIds) {
   } catch { /* ignore */ }
 }
 
-/* ---------- Semaine ---------- */
+/* ---------- Ma semaine : la liste des étapes ---------- */
 
 async function viewStudentWeek(wid) {
   await loadStudentData();
   const week = S.data.weeks.find(w => w.id === wid);
   if (!week) return notFound();
-  const items = S.data.items.filter(i => i.week_id === wid);
+  const steps = weekSteps(wid);
+  const p = progressOf(steps, S.subs);
+  const nextIdx = steps.findIndex(i => !isItemDone(i, S.subs[i.id]));
 
-  // Corrigés disponibles (seulement pour le travail déjà corrigé)
-  await Promise.all(items
-    .filter(i => i.type !== 'notion' && S.subs[i.id] && S.subs[i.id].status !== 'brouillon' && !S.solutions[i.id])
-    .map(async i => { S.solutions[i.id] = await Api.getSolution(i.id); }));
-  markSeen(items.filter(i => S.subs[i.id]?.status === 'corrige').map(i => S.subs[i.id].id));
-
-  // Ordre des slides : notions, puis exercices, puis quiz
-  const ordered = TYPE_ORDER.flatMap(t => items.filter(i => i.type === t));
-  // Lien direct vers un élément (?item=…), sinon la première étape pas encore faite
-  const wanted = new URLSearchParams(location.hash.split('?')[1] || '').get('item');
-  let idx = ordered.findIndex(i => i.id === wanted);
-  if (idx < 0) idx = S.slide?.[wid] ?? ordered.findIndex(i => !isItemDone(i, S.subs[i.id]));
-  S.slide = { ...(S.slide || {}), [wid]: Math.max(0, Math.min(idx < 0 ? 0 : idx, ordered.length - 1)) };
-  return studentWeekHtml(week, ordered);
-}
-
-function studentWeekHtml(week, items) {
-  const p = progressOf(items, S.subs);
-  const cur = S.slide?.[week.id] || 0;
-  const slides = items.map((it, i) => `
-    <div class="slide" data-i="${i}" ${i === cur ? '' : 'hidden'}>
-      <div class="slide-type type-${it.type}"><span class="type-chip">${icon(TYPES[it.type].icon)} ${TYPES[it.type].label}</span>
-        <span class="muted small">Étape ${i + 1} sur ${items.length}</span></div>
-      ${studentItem(it)}
-    </div>`).join('');
   return `
-    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Mon suivi</a></nav>
-    <div class="hero card has-mascot compact">
-      <div class="card-mascot">${faceForProgress(p, 150, 11)}</div>
-      <p class="muted">${esc(weekLabel(week))}</p>
+    <nav class="crumbs"><a href="#/">${icon('arrow-left')} Accueil</a></nav>
+    <div class="week-head">
+      <p class="muted small">${esc(weekLabel(week))}</p>
       <h1>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h1>
-      ${week.message ? `<div class="teacher-msg"><span>Message de ton prof</span>${rich(week.message)}</div>` : ''}
       <div class="hero-progress">${heroProgress(p)}</div>
     </div>
-    ${items.length ? `
-      <section class="deck" data-week="${week.id}" aria-roledescription="carrousel" aria-label="Travail de la semaine">
-        <div class="deck-dots" role="tablist">${deckDots(items, cur)}</div>
-        <div class="deck-track">${slides}</div>
-        <div class="deck-nav">
-          <button class="btn" data-action="slide" data-dir="-1" ${cur === 0 ? 'disabled' : ''}>${icon('chevron-left')} Précédent</button>
-          <span class="deck-count">${cur + 1} / ${items.length}</span>
-          <button class="btn primary" data-action="slide" data-dir="1" ${cur === items.length - 1 ? 'disabled' : ''}>Suivant ${icon('chevron-right')}</button>
-        </div>
-      </section>`
-      : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
+    ${week.message ? `<div class="card teacher-card">${mascotFace('happy', { size: 54, rotate: -8 })}<div><span class="muted small">Message de ton prof</span><div>${rich(week.message)}</div></div></div>` : ''}
+    ${steps.length ? `<ol class="steps">${steps.map((it, i) => {
+      const sub = S.subs[it.id];
+      const done = isItemDone(it, sub);
+      const [label, cls] = stepStatus(it, sub);
+      return `<li><a class="step type-${it.type} ${done ? 'done' : ''} ${i === nextIdx ? 'next' : ''}" href="#/semaine/${wid}/${it.id}">
+        <span class="step-num">${done ? icon('check') : i + 1}</span>
+        <span class="step-body">
+          <span class="step-type">${icon(TYPES[it.type].icon)} ${it.type === 'notion' ? 'Notion' : TYPES[it.type].label}${it.subject ? ' · ' + esc(it.subject) : ''}</span>
+          <strong>${esc(it.title)}</strong>
+        </span>
+        <span class="status ${cls}">${label}</span>
+      </a></li>`;
+    }).join('')}</ol>`
+    : '<div class="empty card">' + mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 }) + '<p>Rien à faire cette semaine, profites-en !</p></div>'}`;
 }
 
 function heroProgress(p) {
-  return `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p)}
+  return `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p, { big: true })}
     ${p.total && p.done === p.total ? '<p class="cheer">Bravo, tu as tout terminé !</p>' : ''}`;
 }
 
-function deckDots(items, cur) {
-  return items.map((it, i) => `<button class="deck-dot type-${it.type} ${i === cur ? 'active' : ''} ${isItemDone(it, S.subs[it.id]) ? 'done' : ''}"
-    role="tab" aria-selected="${i === cur}" aria-label="Étape ${i + 1} : ${esc(it.title)}" data-action="slide-to" data-i="${i}">${isItemDone(it, S.subs[it.id]) ? icon('check') : i + 1}</button>`).join('');
+/* ---------- Une étape = une page ---------- */
+
+async function viewStudentItem(wid, iid) {
+  await loadStudentData();
+  const week = S.data.weeks.find(w => w.id === wid);
+  const steps = week ? weekSteps(wid) : [];
+  const i = steps.findIndex(x => x.id === iid);
+  if (i < 0) return notFound();
+  const it = steps[i];
+  const sub = S.subs[iid];
+  if (it.type !== 'notion' && sub && sub.status !== 'brouillon') S.solutions[iid] = await Api.getSolution(iid);
+  if (sub?.status === 'corrige') markSeen([sub.id]);
+  const prev = steps[i - 1], next = steps[i + 1];
+  return `
+    <nav class="crumbs step-crumbs"><a href="#/semaine/${wid}">${icon('arrow-left')} Ma semaine</a><span class="muted small">Étape ${i + 1} sur ${steps.length}</span></nav>
+    <div class="step-dots" aria-hidden="true">${steps.map((s, k) => `<span class="${k === i ? 'on' : ''} ${isItemDone(s, S.subs[s.id]) ? 'done' : ''}"></span>`).join('')}</div>
+    <div class="slide-type type-${it.type}"><span class="type-chip">${icon(TYPES[it.type].icon)} ${TYPES[it.type].label}</span></div>
+    ${studentItem(it)}
+    <div class="step-nav">
+      ${prev ? `<a class="btn big" href="#/semaine/${wid}/${prev.id}">${icon('chevron-left')} Précédent</a>` : '<span></span>'}
+      ${next ? `<a class="btn primary big" href="#/semaine/${wid}/${next.id}">Suivant ${icon('chevron-right')}</a>`
+        : `<a class="btn primary big" href="#/semaine/${wid}">${icon('check')} Terminer</a>`}
+    </div>`;
 }
 
-/** Affiche la slide n° i de la semaine en cours. */
-function goSlide(i) {
-  const deck = $('.deck');
-  if (!deck) return;
-  const slides = $$('.slide', deck);
-  const n = slides.length;
-  const prev = S.slide[deck.dataset.week] || 0;
-  i = Math.max(0, Math.min(i, n - 1));
-  if (i === prev && !slides[i].hidden) return;
-  S.slide[deck.dataset.week] = i;
-  slides.forEach((el, k) => {
-    el.hidden = k !== i;
-    el.classList.remove('from-left', 'from-right');
-    if (k === i) el.classList.add(i > prev ? 'from-right' : 'from-left');
-  });
-  $$('.deck-dot', deck).forEach((d, k) => { d.classList.toggle('active', k === i); d.setAttribute('aria-selected', k === i); });
-  $('.deck-count', deck).textContent = `${i + 1} / ${n}`;
-  const [btnPrev, btnNext] = $$('.deck-nav .btn', deck);
-  btnPrev.disabled = i === 0;
-  btnNext.disabled = i === n - 1;
-  const top = deck.getBoundingClientRect().top + window.scrollY - 80;
-  if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
+/* ---------- Mes progrès ---------- */
+
+async function viewStudentProgress() {
+  await loadStudentData();
+  const { weeks, items } = S.data;
+  const exos = items.filter(i => i.type === 'exercice');
+  const quizzes = items.filter(i => i.type === 'quiz');
+  const exDone = exos.filter(i => isItemDone(i, S.subs[i.id])).length;
+  const qGraded = quizzes.map(i => S.subs[i.id]).filter(x => x?.status === 'corrige' && x.total);
+  const qAvg = qGraded.length ? Math.round(100 * qGraded.reduce((a, x) => a + x.score / x.total, 0) / qGraded.length) : null;
+  const corrected = correctedItems();
+  const seen = seenCorrections();
+
+  const bySubject = {};
+  for (const it of items) {
+    const k = it.subject || 'Autre';
+    const b = bySubject[k] ||= { total: 0, done: 0, qs: [] };
+    b.total++;
+    if (isItemDone(it, S.subs[it.id])) b.done++;
+    const sub = S.subs[it.id];
+    if (it.type === 'quiz' && sub?.status === 'corrige' && sub.total) b.qs.push(sub.score / sub.total);
+  }
+
+  if (!items.length) return `<h1>Mes progrès</h1><div class="empty card">${mascot(myMascot() || 'snooze', { mood: 'sleep', size: 96 })}<p>Tes progrès apparaîtront ici.</p></div>`;
+
+  return `
+    <h1>Mes progrès</h1>
+    ${gamiChips()}
+    <div class="stat-row">
+      <div class="card stat"><span class="stat-num">${exDone}/${exos.length}</span><span class="muted small">exercices rendus</span></div>
+      <div class="card stat"><span class="stat-num">${qAvg === null ? '—' : qAvg + ' %'}</span><span class="muted small">moyenne aux quiz</span></div>
+    </div>
+
+    ${corrected.length ? `
+      <h2 class="section-title">${icon('mail-check')} Mes corrections</h2>
+      <div class="list-card card">${corrected.map(i => {
+        const s = S.subs[i.id];
+        const isNew = !seen.includes(s.id);
+        return `<a class="corr-link" href="#/semaine/${i.week_id}/${i.id}">${icon(TYPES[i.type].icon)}<span class="grow">${esc(i.title)}${isNew ? ' <span class="new-dot">Nouveau</span>' : ''}</span>
+          ${s.grade ? `<span class="status ok">${esc(s.grade)}</span>` : i.type === 'quiz' ? `<span class="status ok">${s.score}/${s.total}</span>` : ''}${icon('chevron-right')}</a>`;
+      }).join('')}</div>` : ''}
+
+    <h2 class="section-title">${icon('trending-up')} Par matière</h2>
+    <div class="card"><div class="subject-rows">${Object.entries(bySubject).map(([k, b]) => {
+      const p = { pct: Math.round(100 * b.done / b.total) };
+      const avg = b.qs.length ? Math.round(100 * b.qs.reduce((a, x) => a + x, 0) / b.qs.length) : null;
+      return `<div class="subject-row">
+        <div class="subject-row-head"><strong>${esc(k)}</strong>
+          <span class="small muted">${b.done}/${b.total} fait${b.done > 1 ? 's' : ''}${avg === null ? '' : ` · quiz ${avg} %`}</span></div>
+        ${progressBar(p, { big: true, color: subjectColor(k) })}</div>`;
+    }).join('')}</div></div>
+
+    <h2 class="section-title">${icon('calendar-days')} Mes semaines</h2>
+    ${weeks.map(w => {
+      const p = progressOf(weekSteps(w.id), S.subs);
+      return `<a class="card week-row" href="#/semaine/${w.id}">
+        <div class="week-row-main"><h3>${esc(weekLabel(w))}</h3>${w.title ? `<p class="muted">${esc(w.title)}</p>` : ''}</div>
+        <div class="week-row-side"><span class="pct">${p.pct >= 100 ? icon('check') : ''}${p.pct} %</span>${progressBar(p)}</div></a>`;
+    }).join('')}`;
 }
 
-function refreshDeck() {
-  const deck = $('.deck');
-  if (!deck) return;
-  const items = S.data.items.filter(i => i.week_id === deck.dataset.week);
-  const ordered = TYPE_ORDER.flatMap(t => items.filter(i => i.type === t));
-  $('.deck-dots', deck).innerHTML = deckDots(ordered, S.slide[deck.dataset.week] || 0);
-}
-
-// Balayage du doigt sur téléphone
-(() => {
-  let x0 = null, y0 = null;
-  document.addEventListener('touchstart', e => {
-    if (!e.target.closest('.deck-track') || e.target.closest('input, textarea, select')) { x0 = null; return; }
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
-    x0 = null;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      const deck = $('.deck');
-      if (deck) goSlide((S.slide[deck.dataset.week] || 0) + (dx < 0 ? 1 : -1));
-    }
-  }, { passive: true });
-  // Flèches du clavier (hors saisie)
-  document.addEventListener('keydown', e => {
-    const deck = $('.deck');
-    if (!deck || e.target.closest('input, textarea, select, [contenteditable]') || $('#modal').open || $('#lesson')) return;
-    if (e.key === 'ArrowRight') goSlide((S.slide[deck.dataset.week] || 0) + 1);
-    if (e.key === 'ArrowLeft') goSlide((S.slide[deck.dataset.week] || 0) - 1);
-  });
-})();
+/* ---------- Contenu d'une étape ---------- */
 
 function statusBanner(it, sub) {
   if (!sub || sub.status === 'brouillon') {
@@ -305,12 +283,7 @@ function studentExercise(it, sub) {
       ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}
       ${imagePreviews(it.attachments)}${fileList(it.attachments)}
       ${statusBanner(it, sub)}
-      ${draft ? `<div class="lesson-launch">
-        <div class="launch-meta"><span>${icon('pencil')} ${mode === 'fichier' ? 'Réponse en photo' : mode === 'les_deux' ? 'Texte ou photo' : 'Réponse écrite'}</span>
-          <span>${icon('zap')} ${XP.exercice} XP</span>${sub?.answer || files.length ? `<span>${icon('check')} Brouillon enregistré</span>` : ''}</div>
-        <button class="btn primary big block" data-action="lesson-open" data-iid="${it.id}">${sub?.answer || files.length ? 'Continuer ma réponse' : 'Répondre'} ${icon('arrow-right')}</button>
-        <p class="hint">${it.share_model && it.instant_result ? 'Tu verras la correction juste après l’envoi.' : 'Ton prof corrigera ta copie.'}</p>
-      </div>` : `<div class="answer-zone">
+      <div class="answer-zone">
         <h4>Ma réponse</h4>
         ${mode !== 'fichier' ? (draft
           ? `<textarea class="answer-text" data-iid="${it.id}" rows="5" placeholder="Écris ta réponse ici…">${esc(sub?.answer || '')}</textarea>
@@ -319,8 +292,11 @@ function studentExercise(it, sub) {
         ${mode !== 'texte' ? `
           ${imagePreviews(files)}
           ${draft ? fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` }) : fileList(files)}
-          ` : ''}
-      </div>`}
+          ${draft ? `<label class="btn file-btn">${icon('camera')} Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
+        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer à mon prof</button>
+          <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. ${it.share_model && it.instant_result
+            ? 'Tu verras la correction juste après l’envoi.' : 'La correction apparaîtra ici.'}</p>` : ''}
+      </div>
       ${correctionBlock(it, sub)}
     </article>`;
 }
@@ -329,6 +305,7 @@ function studentQuiz(it, sub) {
   const draft = !sub || sub.status === 'brouillon';
   const qs = it.questions || [];
   const answers = sub?.answers || {};
+  const started = S.openQuiz[it.id] || Object.keys(answers).length > 0 || !draft;
   const corrected = sub?.status === 'corrige';
   const sol = S.solutions[it.id] || {};
   const head = `
@@ -338,17 +315,23 @@ function studentQuiz(it, sub) {
     <h3>${esc(it.title)}</h3>
     ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}`;
 
-  if (draft) {
+  // Quiz à résultat immédiat : mode leçon, une question à la fois
+  if (draft && it.instant_result) {
     const done = Object.keys(sub?.checked || {}).length;
     return `<article class="card s-item type-quiz" id="item-${it.id}">${head}
       ${statusBanner(it, sub)}
       <div class="lesson-launch">
         <div class="launch-meta"><span>${icon('circle-help')} ${plural(qs.length, 'question')}</span>
-          ${it.instant_result ? `<span>${icon('heart')} ${HEARTS} vies</span><span>${icon('zap')} jusqu’à ${qs.length * XP.quizRight + XP.quizPerfect} XP</span>` : ''}</div>
+          <span>${icon('heart')} ${HEARTS} vies</span><span>${icon('zap')} jusqu’à ${qs.length * XP.quizRight + XP.quizPerfect} XP</span></div>
         ${done ? progressBar({ pct: Math.round(100 * done / Math.max(1, qs.length)) }) : ''}
         <button class="btn primary big block" data-action="lesson-open" data-iid="${it.id}">${done ? `Reprendre (${done}/${qs.length})` : 'Commencer le quiz'} ${icon('arrow-right')}</button>
-        <p class="hint">${it.instant_result ? 'Une question à la fois : tu sais tout de suite si c’est juste.' : 'Ton prof validera tes réponses avant que tu voies le résultat.'}</p>
+        <p class="hint">Une question à la fois : tu sais tout de suite si c’est juste.</p>
       </div></article>`;
+  }
+
+  if (!started) {
+    return `<article class="card s-item type-quiz" id="item-${it.id}">${head}
+      <button class="btn primary" data-action="st-quiz-open" data-iid="${it.id}">Commencer le quiz (${plural(qs.length, 'question')})</button></article>`;
   }
 
   const questions = qs.map((q, i) => {
@@ -407,8 +390,8 @@ async function refreshStudentItem(iid) {
   const p = progressOf(items, S.subs);
   const hp = $('.hero-progress');
   if (hp) hp.innerHTML = heroProgress(p);
-  refreshDeck();
-  if (typeof L !== 'undefined' && L?.iid === iid && L.phase === 'answer' && L.kind === 'exercice') lessonRender();
+  const dots = $('.step-dots');
+  if (dots) weekSteps(week.id).forEach((s, k) => dots.children[k]?.classList.toggle('done', isItemDone(s, S.subs[s.id])));
 }
 
 async function studentSave(iid, patch, { redraw = true } = {}) {

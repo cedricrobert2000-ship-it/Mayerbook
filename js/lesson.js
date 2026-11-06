@@ -1,10 +1,10 @@
 'use strict';
 
 /* =========================================================
-   Mode leçon (plein écran, une question à la fois)
-   - Quiz : « Vérifier » question par question, la réponse est alors
-     verrouillée côté serveur (student_check), cœurs, XP, confettis.
-   - Exercice : énoncé + réponse (texte / photo) puis envoi au prof.
+   Mode leçon des quiz (plein écran, une question à la fois)
+   « Vérifier » question par question : la réponse est alors verrouillée
+   côté serveur (student_check). Cœurs, XP, sons, confettis.
+   Seulement pour les quiz à résultat immédiat.
    ========================================================= */
 
 let L = null;           // leçon ouverte
@@ -127,12 +127,12 @@ function confetti(root, amount = 140) {
 
 async function openLesson(iid) {
   const it = S.data.items.find(i => i.id === iid);
-  if (!it || it.type === 'notion') return;
+  if (!it || it.type !== 'quiz' || !it.instant_result) return;
   const sub = S.subs[iid];
   if (sub && sub.status !== 'brouillon') return;
-  L = { iid, it, kind: it.type, idx: 0, results: {}, sel: null, phase: 'answer', start: Date.now(), lost: false };
+  L = { iid, it, kind: 'quiz', idx: 0, results: {}, sel: null, phase: 'answer', start: Date.now(), lost: false };
 
-  if (it.type === 'quiz') {
+  {
     const qs = it.questions || [];
     // Questions déjà vérifiées (leçon reprise) : on récupère leur résultat
     const done = qs.filter(q => sub?.checked?.[q.id]);
@@ -152,16 +152,14 @@ async function openLesson(iid) {
   document.body.appendChild(el);
   el.addEventListener('input', e => {
     if (e.target.classList.contains('lesson-input')) { L.sel = e.target.value; updateCta(); }
-    if (e.target.classList.contains('answer-text')) updateCta();
   });
-  if (L.kind === 'quiz' && L.idx >= (it.questions || []).length) await finishQuiz();
+  if (L.idx >= (it.questions || []).length) await finishQuiz();
   else lessonRender();
 }
 
 async function closeLesson() {
   if (!L) return;
   const iid = L.iid;
-  if (L.kind === 'exercice') { try { await flushSave(iid); } catch (e) { showError(e); } }
   L = null;
   $('#lesson')?.remove();
   document.documentElement.classList.remove('lesson-open');
@@ -181,9 +179,7 @@ function lessonRender() {
   const { it } = L;
   const qs = it.questions || [];
   const instant = it.instant_result;
-  const pct = L.kind === 'quiz'
-    ? Math.round(100 * Object.keys(L.results).length / Math.max(1, qs.length))
-    : (L.phase === 'answer' ? 10 : 100);
+  const pct = Math.round(100 * Object.keys(L.results).length / Math.max(1, qs.length));
   const muted = Sfx.muted;
 
   el.innerHTML = `
@@ -191,10 +187,10 @@ function lessonRender() {
       <header class="lesson-top">
         <button class="lesson-icon" data-action="lesson-close" aria-label="Fermer">${icon('x')}</button>
         <div class="lesson-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="lesson-bar-fill" style="width:${pct}%"></div></div>
-        ${L.kind === 'quiz' && instant ? `<span class="hearts ${L.lost ? 'lost' : ''}" aria-label="${heartsLeft()} vies">${icon('heart')}<b>${heartsLeft()}</b></span>` : ''}
+        ${instant ? `<span class="hearts ${L.lost ? 'lost' : ''}" aria-label="${heartsLeft()} vies">${icon('heart')}<b>${heartsLeft()}</b></span>` : ''}
         <button class="lesson-icon" data-action="lesson-mute" aria-label="${muted ? 'Activer le son' : 'Couper le son'}" aria-pressed="${muted}">${icon(muted ? 'volume-x' : 'volume-2')}</button>
       </header>
-      <main class="lesson-main">${L.phase === 'end' ? endHtml() : L.kind === 'quiz' ? questionHtml() : exerciseHtml()}</main>
+      <main class="lesson-main">${L.phase === 'end' ? endHtml() : questionHtml()}</main>
       <footer class="lesson-foot ${L.phase === 'feedback' ? L.fb : ''}">${footHtml()}</footer>
     </div>`;
   L.lost = false;
@@ -237,52 +233,10 @@ function questionHtml() {
     ${input}`;
 }
 
-function exerciseHtml() {
-  const { it } = L;
-  const sub = S.subs[it.id];
-  const mode = it.answer_mode || 'texte';
-  const files = sub?.files || [];
-  if (L.phase !== 'answer') {
-    const sol = S.solutions[it.id] || {};
-    return `
-      <p class="lesson-kicker">Exercice${it.subject ? ' · ' + esc(it.subject) : ''}</p>
-      <h2 class="lesson-title">${esc(it.title)}</h2>
-      <div class="answer-zone"><h4>Ma réponse</h4>
-        ${sub?.answer ? `<div class="student-answer">${rich(sub.answer)}</div>` : ''}${imagePreviews(files)}${fileList(files)}</div>
-      ${sol.model_answer ? `<div class="lesson-solution"><h4>${icon('book-open')} Correction détaillée</h4><div class="content">${rich(sol.model_answer)}</div>
-        <p class="hint">Compare avec ta réponse : ton prof va aussi corriger <strong>ta</strong> copie.</p></div>` : ''}`;
-  }
-  return `
-    <p class="lesson-kicker">Exercice${it.subject ? ' · ' + esc(it.subject) : ''}</p>
-    <div class="lesson-prompt">
-      <span class="lesson-mascot">${mascot(myMascot() || 'zap', { mood: 'wink', size: 92 })}</span>
-      <div class="bubble"><h2 class="lesson-title">${esc(it.title)}</h2>${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}</div>
-    </div>
-    ${imagePreviews(it.attachments)}${fileList(it.attachments)}
-    ${statusBanner(it, sub)}
-    <div class="answer-zone">
-      <h4>Ma réponse</h4>
-      ${mode !== 'fichier' ? `<textarea class="answer-text" data-iid="${it.id}" rows="6" placeholder="Écris ta réponse ici…">${esc(sub?.answer || '')}</textarea>
-        <span class="hint save-state" id="save-${it.id}">${sub?.answer ? 'Brouillon enregistré' : 'Ta réponse est enregistrée automatiquement.'}</span>` : ''}
-      ${mode !== 'texte' ? `${imagePreviews(files)}${fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` })}
-        <label class="btn file-btn">${icon('camera')} Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}
-    </div>`;
-}
-
 function footHtml() {
   const { it } = L;
   if (L.phase === 'end') {
     return `<button class="btn primary big lesson-cta" data-action="lesson-close">Terminer</button>`;
-  }
-  if (L.kind === 'exercice') {
-    if (L.phase === 'answer') {
-      return `<p class="lesson-foot-hint">Une fois envoyé, tu ne pourras plus modifier ta réponse.</p>
-        <button class="btn primary big lesson-cta" data-action="lesson-submit">${icon('send')} Envoyer à mon prof</button>`;
-    }
-    const sol = S.solutions[it.id] || {};
-    return `<div class="lesson-fb">${mascot(myMascot() || 'zap', { mood: 'proud', size: 64, anim: 'bounce' })}
-        <div><strong>Envoyé à ton prof !</strong><p>${sol.model_answer ? 'Voici la correction détaillée.' : 'Il va corriger ta copie.'} <span class="xp-pop">+${XP.exercice} XP</span></p></div></div>
-      <button class="btn primary big lesson-cta" data-action="lesson-close">Continuer</button>`;
   }
   // Quiz
   const q = it.questions[L.idx];
@@ -336,11 +290,7 @@ function updateCta() {
   if (!L || L.phase !== 'answer') return;
   const btn = $('#lesson .lesson-cta');
   if (!btn) return;
-  if (L.kind === 'quiz') btn.disabled = L.sel === null || L.sel === undefined || String(L.sel).trim() === '';
-  else {
-    const txt = $('#lesson .answer-text')?.value || '';
-    btn.disabled = !txt.trim() && !(S.subs[L.iid]?.files || []).length;
-  }
+  btn.disabled = L.sel === null || L.sel === undefined || String(L.sel).trim() === '';
 }
 
 /* ---------- Actions ---------- */
@@ -404,33 +354,13 @@ async function finishQuiz() {
   confetti($('#lesson'), sub?.total && sub.score === sub.total ? 220 : 120);
 }
 
-async function lessonSubmitExercise(btn) {
-  if (!L) return;
-  try {
-    await busy(btn, 'Envoi…', async () => {
-      await flushSave(L.iid);
-      const sub = S.subs[L.iid];
-      if (!sub?.answer?.trim() && !sub?.files?.length) throw new Error('Écris ta réponse ou ajoute une photo avant d’envoyer.');
-      S.subs[L.iid] = await Api.studentSubmit(L.iid);
-      S.solutions[L.iid] = await Api.getSolution(L.iid);
-    });
-  } catch (e) { return showError(e); }
-  markActiveToday();
-  L.phase = 'feedback';
-  L.fb = 'ok';
-  lessonRender();
-  Sfx.play('done');
-  confetti($('#lesson'));
-}
-
 Object.assign(Actions, {
   'lesson-open': d => openLesson(d.iid).catch(showError),
   'lesson-close': () => closeLesson(),
   'lesson-mute': () => { Sfx.muted = !Sfx.muted; lessonRender(); },
   'lesson-pick': d => lessonPick(d.j),
   'lesson-check': (d, el) => lessonCheck(el),
-  'lesson-next': () => lessonNext(),
-  'lesson-submit': (d, el) => lessonSubmitExercise(el)
+  'lesson-next': () => lessonNext()
 });
 
 document.addEventListener('keydown', e => {
@@ -438,12 +368,12 @@ document.addEventListener('keydown', e => {
   const typing = e.target.closest('textarea');
   if (e.key === 'Escape') { e.preventDefault(); closeLesson(); return; }
   if (typing || e.target.closest('button')) return;
-  if (L.phase === 'answer' && L.kind === 'quiz' && /^[1-9]$/.test(e.key) && !e.target.closest('input')) {
+  if (L.phase === 'answer' && /^[1-9]$/.test(e.key) && !e.target.closest('input')) {
     const tile = $(`#lesson .tile[data-j="${Number(e.key) - 1}"]`);
     if (tile) lessonPick(tile.dataset.j);
   }
   if (e.key === 'Enter') {
     const cta = $('#lesson .lesson-cta');
-    if (cta && !cta.disabled && L.kind === 'quiz') { e.preventDefault(); cta.click(); }
+    if (cta && !cta.disabled) { e.preventDefault(); cta.click(); }
   }
 });

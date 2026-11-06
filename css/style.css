@@ -1385,3 +1385,69 @@ html.lesson-open .toast { z-index: 300; }
 }
 
 .lesson .btn.lesson-cta:hover:not(:disabled) { filter: brightness(1.08); }
+
+
+/* =========================================================
+   Espace élève simplifié : une idée par page, grosses cibles tactiles
+   ========================================================= */
+.hello { display: flex; align-items: center; gap: 14px; margin: 6px 0 18px; }
+.hello h1 { margin: 0; font-size: 1.7rem; }
+.hello .gami { margin-top: 8px; }
+.hello-mascot { flex: none; border: 0; background: none; padding: 0; cursor: pointer; }
+
+.notice-card {
+  display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text);
+  background: var(--c-yellow); color: var(--ink);
+}
+.notice-card > .icon { width: 28px; height: 28px; flex: none; }
+.notice-card > span { flex: 1; }
+.notice-card .muted { color: rgb(20 18 22 / .7); }
+
+.current-week .next-step { margin: 12px 0 0; font-size: .95rem; }
+.current-week h2 { font-size: 1.5rem; }
+
+.week-head { margin-bottom: 16px; }
+.week-head h1 { margin: 2px 0 12px; }
+.teacher-card { display: flex; align-items: flex-start; gap: 12px; }
+.teacher-card > .mascot { flex: none; }
+
+/* Liste des étapes */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.step {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 76px;
+  border-radius: 20px; background: var(--surface); color: var(--text); text-decoration: none;
+  border: 2px solid transparent; transition: transform .12s ease, border-color .15s ease;
+}
+.step:hover { border-color: var(--chip); }
+.step:active { transform: scale(.98); }
+.step-num {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 800; font-size: 1.1rem; background: var(--chip); color: var(--ink);
+}
+.step-num .icon { width: 22px; height: 22px; }
+.step.done .step-num { background: var(--ok); color: #fff; }
+.step-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.step-body strong { font-size: 1.05rem; line-height: 1.3; }
+.step-type { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.step-type .icon { width: 14px; height: 14px; }
+.step .status { flex: none; }
+.step.next { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
+.step.next .step-num { animation: step-pulse 1.8s ease-in-out infinite; }
+@keyframes step-pulse { 50% { transform: scale(1.1); } }
+.status.todo { background: var(--bg); color: var(--muted); }
+
+/* Page d'une étape */
+.step-crumbs { display: flex; justify-content: space-between; align-items: center; }
+.step-dots { display: flex; gap: 6px; margin: 0 0 14px; }
+.step-dots span { flex: 1; height: 6px; border-radius: 999px; background: var(--surface-2); }
+.step-dots span.done { background: var(--ok); }
+.step-dots span.on { background: var(--primary); }
+.step-nav { display: flex; justify-content: space-between; gap: 12px; margin: 18px 0 8px; }
+.step-nav .btn { flex: 1; justify-content: center; border-radius: 16px; min-height: 52px; }
+.step-nav span:empty { flex: 1; }
+
+/* Mes progrès */
+.list-card .corr-link { padding: 12px; }
+.list-card .corr-link .grow { flex: 1; }
+.new-dot { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--primary); color: #fff; font-size: .7rem; font-weight: 700; vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .step.next .step-num { animation: none; } }

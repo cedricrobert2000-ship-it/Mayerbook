@@ -140,8 +140,10 @@ async function renderTopbar() {
     const weeks = S.data?.weeks || [];
     const current = weeks.find(isCurrentWeek) || weeks[0];
     const onWeek = path.startsWith('/semaine');
-    html = item('#/', icon('house'), 'Accueil', !onWeek)
+    const onProg = path.startsWith('/progres');
+    html = item('#/', icon('house'), 'Accueil', !onWeek && !onProg)
       + (current ? item(`#/semaine/${current.id}`, icon('calendar-days'), 'Ma semaine', onWeek) : '')
+      + item('#/progres', icon('trending-up'), 'Progrès', onProg)
       + logout;
   }
   bottom.innerHTML = html;
@@ -156,7 +158,7 @@ async function renderTopbar() {
 const PAGE_DEPTH = { '': 0, eleve: 1, corrections: 1, semaine: 2, copie: 3 };
 function pageDepth(path) {
   const first = (path || '/').split('/').filter(Boolean)[0] || '';
-  if (Session?.role === 'student') return first === 'semaine' ? 1 : 0;
+  if (Session?.role === 'student') return first === 'semaine' ? (path.split('/').filter(Boolean).length > 2 ? 2 : 1) : 0;
   return PAGE_DEPTH[first] ?? 1;
 }
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -208,7 +210,9 @@ async function route(force = false) {
       else if (parts[0] === 'copie' && parts[1]) html = await viewTutorCopy(parts[1]);
       else html = await viewTutorHome();
     } else {
-      if (parts[0] === 'semaine' && parts[1]) html = await viewStudentWeek(parts[1]);
+      if (parts[0] === 'semaine' && parts[2]) html = await viewStudentItem(parts[1], parts[2]);
+      else if (parts[0] === 'semaine' && parts[1]) html = await viewStudentWeek(parts[1]);
+      else if (parts[0] === 'progres') html = await viewStudentProgress();
       else html = await viewStudentHome();
     }
   } catch (e) {
@@ -228,7 +232,7 @@ async function route(force = false) {
   if (changed) {
     if (!document.startViewTransition || !direction) window.scrollTo(0, 0);
     const item = new URLSearchParams(query || '').get('item');
-    if (item && !$('.deck')) setTimeout(() => $('#item-' + item)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    if (item) setTimeout(() => $('#item-' + item)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 }
 
@@ -244,8 +248,6 @@ const Actions = {
   'close-modal-go': (d, el) => { Modal.close(); location.hash = el.getAttribute('href'); },
   'copy': d => copyText(d.text),
   'pick-mascot': () => openMascotPicker(false),
-  'slide': d => { const deck = $('.deck'); if (deck) goSlide((S.slide[deck.dataset.week] || 0) + Number(d.dir)); },
-  'slide-to': d => goSlide(Number(d.i)),
   'install-app': async () => {
     if (installPrompt) {
       installPrompt.prompt();
