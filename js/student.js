@@ -72,6 +72,7 @@ async function viewStudentHome() {
     <div class="hero">
       <h1>Bonjour ${esc(firstName(student.name))} <button class="mascot-btn" data-action="pick-mascot" title="Changer de personnage">${mascot(myMascot() || 'zap', { mood: myMascot() === 'snooze' ? 'calm' : 'happy', anim: 'wiggle', size: 48 })}</button></h1>
       <p class="muted">${esc(student.level)} · ${(student.subjects || []).map(subjectTag).join(' ')}</p>
+      ${gamiChips()}
     </div>
 
     ${fresh.length ? `
@@ -239,7 +240,7 @@ function refreshDeck() {
   // Flèches du clavier (hors saisie)
   document.addEventListener('keydown', e => {
     const deck = $('.deck');
-    if (!deck || e.target.closest('input, textarea, select, [contenteditable]') || $('#modal').open) return;
+    if (!deck || e.target.closest('input, textarea, select, [contenteditable]') || $('#modal').open || $('#lesson')) return;
     if (e.key === 'ArrowRight') goSlide((S.slide[deck.dataset.week] || 0) + 1);
     if (e.key === 'ArrowLeft') goSlide((S.slide[deck.dataset.week] || 0) - 1);
   });
@@ -304,7 +305,12 @@ function studentExercise(it, sub) {
       ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}
       ${imagePreviews(it.attachments)}${fileList(it.attachments)}
       ${statusBanner(it, sub)}
-      <div class="answer-zone">
+      ${draft ? `<div class="lesson-launch">
+        <div class="launch-meta"><span>${icon('pencil')} ${mode === 'fichier' ? 'Réponse en photo' : mode === 'les_deux' ? 'Texte ou photo' : 'Réponse écrite'}</span>
+          <span>${icon('zap')} ${XP.exercice} XP</span>${sub?.answer || files.length ? `<span>${icon('check')} Brouillon enregistré</span>` : ''}</div>
+        <button class="btn primary big block" data-action="lesson-open" data-iid="${it.id}">${sub?.answer || files.length ? 'Continuer ma réponse' : 'Répondre'} ${icon('arrow-right')}</button>
+        <p class="hint">${it.share_model && it.instant_result ? 'Tu verras la correction juste après l’envoi.' : 'Ton prof corrigera ta copie.'}</p>
+      </div>` : `<div class="answer-zone">
         <h4>Ma réponse</h4>
         ${mode !== 'fichier' ? (draft
           ? `<textarea class="answer-text" data-iid="${it.id}" rows="5" placeholder="Écris ta réponse ici…">${esc(sub?.answer || '')}</textarea>
@@ -313,11 +319,8 @@ function studentExercise(it, sub) {
         ${mode !== 'texte' ? `
           ${imagePreviews(files)}
           ${draft ? fileList(files, { removable: true, dataAttr: `data-iid="${it.id}"` }) : fileList(files)}
-          ${draft ? `<label class="btn file-btn">${icon('camera')} Ajouter une photo / un fichier<input type="file" data-upload="answer" data-iid="${it.id}" accept="image/*,application/pdf" multiple hidden></label>` : ''}` : ''}
-        ${draft ? `<button class="btn primary big block" data-action="st-submit" data-iid="${it.id}">${icon('send')} Envoyer à mon prof</button>
-          <p class="hint">Une fois envoyé, tu ne pourras plus modifier ta réponse. ${it.share_model && it.instant_result
-            ? 'Tu verras la correction juste après l’envoi.' : 'La correction apparaîtra ici.'}</p>` : ''}
-      </div>
+          ` : ''}
+      </div>`}
       ${correctionBlock(it, sub)}
     </article>`;
 }
@@ -326,7 +329,6 @@ function studentQuiz(it, sub) {
   const draft = !sub || sub.status === 'brouillon';
   const qs = it.questions || [];
   const answers = sub?.answers || {};
-  const started = S.openQuiz[it.id] || Object.keys(answers).length > 0 || !draft;
   const corrected = sub?.status === 'corrige';
   const sol = S.solutions[it.id] || {};
   const head = `
@@ -336,9 +338,17 @@ function studentQuiz(it, sub) {
     <h3>${esc(it.title)}</h3>
     ${it.content ? `<div class="content">${rich(it.content)}</div>` : ''}`;
 
-  if (!started) {
+  if (draft) {
+    const done = Object.keys(sub?.checked || {}).length;
     return `<article class="card s-item type-quiz" id="item-${it.id}">${head}
-      <button class="btn primary" data-action="st-quiz-open" data-iid="${it.id}">Commencer le quiz (${plural(qs.length, 'question')})</button></article>`;
+      ${statusBanner(it, sub)}
+      <div class="lesson-launch">
+        <div class="launch-meta"><span>${icon('circle-help')} ${plural(qs.length, 'question')}</span>
+          ${it.instant_result ? `<span>${icon('heart')} ${HEARTS} vies</span><span>${icon('zap')} jusqu’à ${qs.length * XP.quizRight + XP.quizPerfect} XP</span>` : ''}</div>
+        ${done ? progressBar({ pct: Math.round(100 * done / Math.max(1, qs.length)) }) : ''}
+        <button class="btn primary big block" data-action="lesson-open" data-iid="${it.id}">${done ? `Reprendre (${done}/${qs.length})` : 'Commencer le quiz'} ${icon('arrow-right')}</button>
+        <p class="hint">${it.instant_result ? 'Une question à la fois : tu sais tout de suite si c’est juste.' : 'Ton prof validera tes réponses avant que tu voies le résultat.'}</p>
+      </div></article>`;
   }
 
   const questions = qs.map((q, i) => {
@@ -398,6 +408,7 @@ async function refreshStudentItem(iid) {
   const hp = $('.hero-progress');
   if (hp) hp.innerHTML = heroProgress(p);
   refreshDeck();
+  if (typeof L !== 'undefined' && L?.iid === iid && L.phase === 'answer' && L.kind === 'exercice') lessonRender();
 }
 
 async function studentSave(iid, patch, { redraw = true } = {}) {
@@ -477,6 +488,7 @@ async function studentUpload(input) {
 }
 
 async function studentRemoveFile(iid, index) {
+  try { await flushSave(iid); } catch (e) { return showError(e); }
   const list = [...(S.subs[iid]?.files || [])];
   list.splice(index, 1);
   try { await studentSave(iid, { files: list }); } catch (e) { showError(e); }

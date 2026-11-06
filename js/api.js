@@ -195,7 +195,7 @@ function createSupaApi(cfg) {
     },
     async returnToStudent(subId, feedback) {
       return check(await sb.from('submissions').update({
-        status: 'brouillon', feedback: feedback || '', submitted_at: null, corrected_at: null, score: null, total: null,
+        status: 'brouillon', feedback: feedback || '', submitted_at: null, corrected_at: null, score: null, total: null, checked: {},
         updated_at: new Date().toISOString()
       }).eq('id', subId).select().single());
     },
@@ -237,6 +237,8 @@ function createSupaApi(cfg) {
         p_understood: patch.understood ?? null
       }));
     },
+    // Mode leçon : vérifie une question (la réponse est alors verrouillée)
+    async studentCheck(itemId, qid, value) { return check(await sb.rpc('student_check', { p_item: itemId, p_qid: qid, p_value: value })); },
     async studentSubmit(itemId) { return check(await sb.rpc('student_submit', { p_item: itemId })); },
     async getSolution(itemId) { return check(await sb.rpc('get_solution', { p_item: itemId })) || {}; },
     // Personnage choisi : enregistré dans le profil du compte de l'élève (modifiable par lui seul)
@@ -480,7 +482,7 @@ function createDemoApi() {
     async returnToStudent(subId, feedback) {
       tutorOnly();
       const s = db.subs.find(x => x.id === subId);
-      Object.assign(s, { status: 'brouillon', feedback: feedback || '', submitted_at: null, corrected_at: null, score: null, total: null, updated_at: now() });
+      Object.assign(s, { status: 'brouillon', feedback: feedback || '', submitted_at: null, corrected_at: null, score: null, total: null, checked: {}, updated_at: now() });
       save(); return clone(s);
     },
 
@@ -513,11 +515,31 @@ function createDemoApi() {
       if (editing) {
         if (s.status !== 'brouillon') throw new Error('Déjà envoyé : tu ne peux plus modifier ta réponse.');
         if (patch.answer != null) s.answer = patch.answer;
-        if (patch.answers != null) s.answers = patch.answers;
+        if (patch.answers != null) {
+          const locked = Object.fromEntries(Object.keys(s.checked || {}).filter(k => k in (s.answers || {})).map(k => [k, s.answers[k]]));
+          s.answers = { ...patch.answers, ...locked };
+        }
         if (patch.files != null) s.files = patch.files;
       }
       s.updated_at = now(); save();
       return clone(s);
+    },
+    async studentCheck(itemId, qid, value) {
+      const { st, it } = visibleItem(itemId);
+      if (it.type !== 'quiz') throw new Error('Seulement pour un quiz');
+      const q = it.questions.find(x => x.id === qid);
+      if (!q) throw new Error('Question inconnue');
+      const s = subFor(itemId, st.id);
+      if (s.status !== 'brouillon') throw new Error('Déjà envoyé.');
+      s.checked ||= {};
+      if (!s.checked[qid]) {
+        s.answers = { ...(s.answers || {}), [qid]: value };
+        s.checked[qid] = true;
+        s.updated_at = now(); save();
+      }
+      if (!it.instant_result) return { checked: false };
+      const k = db.keys[itemId]?.answers?.[qid];
+      return { checked: true, correct: !!k && isCorrect(q, k.answer, s.answers[qid]), answer: k?.answer ?? null, explanation: k?.explanation || '' };
     },
     async studentSubmit(itemId) {
       const { st, it } = visibleItem(itemId);

@@ -74,6 +74,7 @@ create table if not exists public.submissions (
   understood boolean not null default false,
   answer text not null default '',
   answers jsonb not null default '{}',
+  checked jsonb not null default '{}',   -- questions de quiz déjà vérifiées (réponse verrouillée)
   files jsonb not null default '[]',
   score int,
   total int,
@@ -85,6 +86,8 @@ create table if not exists public.submissions (
   updated_at timestamptz not null default now(),
   unique (item_id, student_id)
 );
+-- Mise à jour d'une base existante
+alter table public.submissions add column if not exists checked jsonb not null default '{}';
 create index if not exists submissions_student_idx on public.submissions (student_id);
 create index if not exists submissions_status_idx on public.submissions (status);
 
@@ -262,7 +265,12 @@ begin
   end if;
   if sub.status = 'brouillon' then
     if p_answer is not null then sub.answer := left(p_answer, 20000); end if;
-    if p_answers is not null then sub.answers := p_answers; end if;
+    if p_answers is not null then
+      -- Les réponses déjà vérifiées (mode leçon) ne peuvent plus changer
+      sub.answers := p_answers || coalesce(
+        (select jsonb_object_agg(k, sub.answers -> k) from jsonb_object_keys(sub.checked) k
+          where sub.answers ? k), '{}');
+    end if;
     if p_files is not null then sub.files := p_files; end if;
   elsif p_answer is not null or p_answers is not null or p_files is not null then
     raise exception 'Déjà envoyé : tu ne peux plus modifier ta réponse.';
@@ -274,6 +282,59 @@ begin
   where id = sub.id
   returning * into sub;
   return sub;
+end;
+$$;
+
+-- Mode leçon : l'élève vérifie UNE question du quiz. La réponse est alors
+-- verrouillée, et la correction de cette question seulement est renvoyée
+-- (si le prof a choisi le résultat immédiat).
+create or replace function public.student_check(p_item uuid, p_qid text, p_value jsonb) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  sid uuid := public.my_student_id();
+  it public.items;
+  sub public.submissions;
+  q jsonb;
+  k jsonb;
+  v text;
+  ok boolean := false;
+begin
+  select * into it from public.items where id = p_item;
+  if sid is null or it.id is null or not public.week_visible_to_me(it.week_id) then
+    raise exception 'Accès refusé';
+  end if;
+  if it.type <> 'quiz' then raise exception 'Seulement pour un quiz'; end if;
+  select x into q from jsonb_array_elements(it.questions) x where x ->> 'id' = p_qid;
+  if q is null then raise exception 'Question inconnue'; end if;
+
+  insert into public.submissions (item_id, student_id) values (p_item, sid)
+  on conflict (item_id, student_id) do nothing;
+  select * into sub from public.submissions where item_id = p_item and student_id = sid for update;
+  if sub.status <> 'brouillon' then raise exception 'Déjà envoyé.'; end if;
+
+  if not sub.checked ? p_qid then
+    update public.submissions set
+      answers = answers || jsonb_build_object(p_qid, p_value),
+      checked = checked || jsonb_build_object(p_qid, true),
+      updated_at = now()
+    where id = sub.id returning * into sub;
+  end if;
+
+  if not it.instant_result then return jsonb_build_object('checked', false); end if;
+
+  select answers -> p_qid into k from public.item_keys where item_id = p_item;
+  v := sub.answers ->> p_qid;
+  if k is not null and coalesce(v, '') <> '' then
+    if q ->> 'type' = 'texte' then
+      ok := exists (
+        select 1 from unnest(string_to_array(k ->> 'answer', '|')) a
+        where public.norm_answer(a) <> '' and public.norm_answer(a) = public.norm_answer(v));
+    else
+      ok := v = (k ->> 'answer');
+    end if;
+  end if;
+  return jsonb_build_object('checked', true, 'correct', ok,
+    'answer', k -> 'answer', 'explanation', coalesce(k ->> 'explanation', ''));
 end;
 $$;
 
@@ -347,6 +408,7 @@ $$;
 revoke execute on function public.claim_tutor() from anon;
 revoke execute on function public.student_save(uuid, text, jsonb, jsonb, boolean) from anon;
 revoke execute on function public.student_submit(uuid) from anon;
+revoke execute on function public.student_check(uuid, text, jsonb) from anon;
 revoke execute on function public.get_solution(uuid) from anon;
 -- Personne ne peut appeler la notation directement (sinon on pourrait deviner les réponses)
 revoke execute on function public.grade_quiz(uuid, jsonb) from public, anon, authenticated;
