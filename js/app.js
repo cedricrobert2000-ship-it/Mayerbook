@@ -16,7 +16,7 @@ function viewLogin(tab = 'eleve') {
     <div class="login">
       <div class="login-brand">
         <div class="login-crew">${mascotCrew()}</div>
-        <h1 class="login-title"><img src="icons/logo.svg" alt="" width="52" height="52">Mayerbook</h1>
+        <h1 class="login-title"><img src="icons/logo-white.svg" alt="" width="52" height="52">Mayerbook</h1>
         <p class="muted">Le suivi de tes cours particuliers, semaine après semaine.</p>
       </div>
 
@@ -121,6 +121,15 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   });
 }
 
+/** Retire l'écran de chargement (au moins ~1 s pour voir l'animation). */
+const splashStart = performance.now();
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el || el.classList.contains('out')) return;
+  const wait = Math.max(0, 1100 - (performance.now() - splashStart));
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, wait);
+}
+
 async function renderTopbar() {
   const nav = $('#topnav');
   const bottom = $('#bottomnav');
@@ -130,7 +139,9 @@ async function renderTopbar() {
   const meBtn = Session?.role === 'student'
     ? `<button class="nav-user" data-action="pick-mascot" title="Changer de personnage">${me ? mascot(me, { mood: me === 'snooze' ? 'calm' : 'happy', anim: 'bob', size: 32 }) : icon('smile-plus')}<span>${esc(firstName(Session.student.name))}</span></button>`
     : '';
-  nav.innerHTML = installButton() + demo + meBtn;
+  // Plus d'en-tête : seulement l'installation (si possible) et le badge démo sur la connexion
+  nav.innerHTML = installButton() + (Session ? '' : demo);
+  nav.hidden = !nav.innerHTML;
   if (!Session) { bottom.innerHTML = ''; bottom.hidden = true; document.body.classList.remove('has-bottomnav'); return; }
 
   const path = location.hash.slice(1).split('?')[0] || '/';
@@ -201,6 +212,7 @@ async function route(force = false) {
     app.innerHTML = viewLogin();
     bindLogin();
     renderTopbar();
+    hideSplash();
     return;
   }
   document.body.dataset.role = Session.role;
@@ -237,6 +249,7 @@ async function route(force = false) {
   // Première connexion de l'élève : il choisit son personnage
   if (Session.role === 'student' && !myMascot() && !$('#modal').open) openMascotPicker(true);
   renderTopbar();
+  hideSplash();
   document.title = 'Mayerbook';
 
   if (changed) {

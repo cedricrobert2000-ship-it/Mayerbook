@@ -1689,3 +1689,40 @@ body {
 .demo-card { border: 0 !important; }
 .demo-card { background: color-mix(in srgb, var(--surface) 92%, transparent) !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
 .demo-card .muted { color: var(--muted) !important; }
+
+/* ---------- Sans en-tête ---------- */
+.page-actions { display: flex; justify-content: flex-end; gap: 8px; max-width: 1100px; margin: 0 auto; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
+.page-actions[hidden] { display: none; }
+.container { padding-top: max(28px, calc(env(safe-area-inset-top) + 16px)); }
+.page-actions:not([hidden]) + .container { padding-top: 8px; }
+
+/* Logo de la page de connexion en blanc */
+.login-title { color: #fff; }
+.login-title img { filter: drop-shadow(0 0 24px rgb(157 107 255 / .55)); }
+
+/* ---------- Écran de chargement ---------- */
+#splash {
+  position: fixed; inset: 0; z-index: 10000; display: grid; place-content: center; justify-items: center; gap: 18px;
+  background:
+    radial-gradient(110% 60% at 50% -12%, rgb(123 63 228 / .62) 0%, rgb(123 63 228 / .18) 45%, transparent 72%),
+    #0B0812;
+  transition: opacity .45s ease, visibility .45s;
+}
+#splash.out { opacity: 0; visibility: hidden; pointer-events: none; }
+.splash-logo { position: relative; animation: splash-pop .7s cubic-bezier(.3, 1.5, .5, 1) both, splash-float 2.6s ease-in-out .7s infinite; }
+.splash-logo::before {
+  content: ''; position: absolute; inset: -30px; border-radius: 50%;
+  background: radial-gradient(circle, rgb(157 107 255 / .55), transparent 65%);
+  animation: splash-glow 2.6s ease-in-out infinite; z-index: -1;
+}
+.splash-logo img { display: block; width: 96px; height: 96px; transform: rotate(-6deg); }
+.splash-name {
+  font-family: var(--font-display); font-size: 2rem; color: #fff; letter-spacing: .01em;
+  animation: splash-up .6s ease .25s both;
+}
+@keyframes splash-pop { from { transform: scale(.3) rotate(-30deg); opacity: 0; } }
+@keyframes splash-float { 50% { transform: translateY(-8px) rotate(4deg); } }
+@keyframes splash-glow { 0%, 100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes splash-up { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .splash-logo, .splash-logo::before, .splash-name { animation: none; } }
+.login-title, h1.login-title { color: #fff !important; -webkit-text-fill-color: #fff; background: none; }
