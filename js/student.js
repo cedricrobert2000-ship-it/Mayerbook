@@ -127,45 +127,56 @@ const PATH_SECTIONS = {
   quiz:     { title: 'Je joue',        icon: 'zap' }
 };
 
+const CARD_CREW = ['zap', 'wow', 'snooze', 'grr', 'meh', 'ouch', 'zen'];
+
 function weekPath(wid, steps, nextIdx) {
+  const me = myMascot() || 'zen';
+  let n = 0;   // ordre d'apparition (animation en cascade)
+  let crew = 0;
   const sections = TYPE_ORDER.map(type => {
     const its = steps.filter(i => i.type === type);
     if (!its.length) return '';
-    const done = its.filter(i => isItemDone(i, S.subs[i.id])).length;
+    const isDone = it => isItemDone(it, S.subs[it.id]);
+    // À faire d'abord (la prochaine étape en tête), le travail fait à la fin
+    const ordered = [...its.filter(i => steps.indexOf(i) === nextIdx), ...its.filter(i => !isDone(i) && steps.indexOf(i) !== nextIdx), ...its.filter(isDone)];
+    const done = its.filter(isDone).length;
+    const left = its.length - done;
     const sec = PATH_SECTIONS[type];
-    const cards = its.map(it => {
+    const cards = ordered.map(it => {
       const sub = S.subs[it.id];
-      const isDone = isItemDone(it, sub);
+      const dn = isDone(it);
       const isNext = steps.indexOf(it) === nextIdx;
       const [label, cls] = stepStatus(it, sub);
-      return `<a class="wk-card type-${it.type} ${isDone ? 'done' : isNext ? 'next' : 'todo'}" href="#/semaine/${wid}/${it.id}">
+      const who = isNext ? me : CARD_CREW[crew++ % CARD_CREW.length];
+      return `<a class="wk-card type-${it.type} ${dn ? 'done' : isNext ? 'next' : 'todo'}" href="#/semaine/${wid}/${it.id}" style="--i:${n++}">
         <span class="wk-top">
-          <span class="wk-icon">${icon(isDone ? 'check' : TYPES[it.type].icon)}</span>
-          ${isNext ? '<span class="wk-now">À toi !</span>' : `<span class="node-status ${cls}">${label}</span>`}
+          <span class="wk-icon">${icon(dn ? 'check' : TYPES[it.type].icon)}</span>
+          ${isNext ? '<span class="wk-now">À toi !</span>' : dn ? `<span class="node-status ${cls}">${label}</span>` : cls !== 'todo' || label !== 'À faire' ? `<span class="node-status ${cls}">${label}</span>` : ''}
         </span>
         <strong class="wk-title">${esc(it.title)}</strong>
-        ${it.subject ? `<span class="wk-sub">${esc(it.subject)}</span>` : ''}
-        <span class="wk-cta">${isDone ? 'Revoir' : isNext ? 'C’est parti' : 'Ouvrir'} ${icon('arrow-right')}</span>
-        ${isNext ? `<span class="wk-mascot">${mascotFace('happy', { size: 64, rotate: -10 })}</span>` : ''}
+        ${it.subject && !dn ? `<span class="wk-sub">${esc(it.subject)}</span>` : ''}
+        ${dn ? '' : `<span class="wk-cta">${isNext ? `C’est parti ${icon('arrow-right')}` : `Ouvrir ${icon('arrow-right')}`}</span>
+        <span class="wk-mascot">${mascot(who, { mood: isNext ? 'happy' : 'wink', size: isNext ? 96 : 80, anim: isNext ? 'wiggle' : 'bob' })}</span>`}
       </a>`;
     }).join('');
     return `
       <section class="wk-section type-${type}">
-        <div class="wk-head ${done === its.length ? 'complete' : ''}">
-          <span class="ph-icon">${icon(sec.icon)}</span>
+        <div class="wk-head ${left ? '' : 'complete'}">
+          <span class="ph-icon">${icon(left ? sec.icon : 'check')}</span>
           <strong>${sec.title}</strong>
-          <span class="ph-count">${done === its.length ? icon('check') : ''}${done}/${its.length}</span>
+          ${left ? `<span class="wk-left">${left} à faire</span>` : `<span class="wk-left ok">${icon('check')} Fini</span>`}
         </div>
         <div class="wk-row ${its.length === 1 ? 'single' : ''}">${cards}</div>
       </section>`;
   }).join('');
   const allDone = nextIdx < 0;
   return `<div class="week-cards">${sections}
-    ${allDone ? `<div class="card wk-done">${mascot(myMascot() || 'zen', { mood: 'proud', size: 80, anim: 'bounce' })}<strong>Semaine terminée, bravo !</strong></div>` : ''}</div>`;
+    ${allDone ? `<div class="card wk-done">${mascot(me, { mood: 'proud', size: 80, anim: 'bounce' })}<strong>Semaine terminée, bravo !</strong></div>` : ''}</div>`;
 }
 
 function heroProgress(p) {
-  return `<div class="hero-progress-label"><strong>Ma progression</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p, { big: true })}
+  const left = p.total - p.done;
+  return `<div class="hero-progress-label"><strong>${left ? (left === 1 ? 'Plus qu’une étape !' : `Plus que ${left} étapes !`) : 'Tout est fait !'}</strong><span>${p.done} / ${p.total}</span></div>${progressBar(p, { big: true })}
     ${p.total && p.done === p.total ? '<p class="cheer">Bravo, tu as tout terminé !</p>' : ''}`;
 }
 

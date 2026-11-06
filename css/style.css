@@ -1897,3 +1897,49 @@ dialog.sheet > .btn.block { margin-top: 6px; }
 .wk-now { padding: 4px 10px; border-radius: 999px; background: #fff; color: #141216; font-weight: 800; font-size: .78rem; }
 .wk-mascot { position: absolute; right: -14px; bottom: -18px; opacity: .9; pointer-events: none; }
 .wk-done { display: flex; align-items: center; gap: 14px; font-size: 1.05rem; }
+
+
+/* =========================================================
+   Ma semaine v2 : le travail à faire en avant, animé
+   ========================================================= */
+.wk-left { padding: 4px 12px; border-radius: 999px; font-weight: 800; font-size: .82rem; background: var(--primary-soft); color: #CDB4FF; }
+.wk-left.ok { display: inline-flex; align-items: center; gap: 4px; background: var(--ok-soft); color: var(--ok); }
+.wk-left .icon { width: 14px; height: 14px; }
+.wk-head .ph-count { display: none; }
+
+/* Entrée en cascade */
+.wk-card { animation: wk-in .55s cubic-bezier(.2, .9, .3, 1.15) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes wk-in { from { opacity: 0; transform: translateY(18px) scale(.94); } }
+
+/* Cartes à faire : grandes, avec un personnage qui dépasse */
+.wk-card.todo, .wk-card.next { min-height: 196px; padding-right: 70px; }
+.wk-card.todo .wk-icon { background: var(--primary-soft); color: #CDB4FF; }
+.wk-card .wk-mascot { position: absolute; right: -16px; bottom: -22px; opacity: 1; transform: rotate(-8deg); pointer-events: none; }
+.wk-card.todo .wk-cta { color: var(--text); }
+
+/* La prochaine étape : reflet qui passe + bouton qui bat */
+.wk-card.next { flex-basis: min(82%, 300px); }
+.wk-card.next::before {
+  content: ''; position: absolute; inset: -40% auto -40% -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / .16), transparent);
+  transform: skewX(-18deg); animation: wk-shine 3.2s ease-in-out infinite 1s;
+}
+@keyframes wk-shine { 0% { left: -60%; } 45%, 100% { left: 130%; } }
+.wk-card.next .wk-cta {
+  align-self: flex-start; padding: 10px 16px; border-radius: 999px; background: #fff; color: #141216; font-weight: 800;
+  animation: wk-beat 1.8s ease-in-out infinite;
+}
+@keyframes wk-beat { 0%, 100% { transform: scale(1); } 12% { transform: scale(1.07); } 24% { transform: scale(1); } }
+.wk-card.next .wk-now { animation: wk-wobble 2.4s ease-in-out infinite; }
+@keyframes wk-wobble { 0%, 100% { transform: rotate(0); } 8% { transform: rotate(-8deg); } 16% { transform: rotate(6deg); } 24% { transform: rotate(0); } }
+
+/* Travail fait : petit et discret, rangé au bout */
+.wk-card.done { flex-basis: 150px; min-height: 120px; padding: 14px; opacity: .62; background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.wk-card.done .wk-title { font-size: .92rem; -webkit-line-clamp: 2; }
+.wk-card.done .wk-icon { width: 34px; height: 34px; border-radius: 12px; }
+.wk-card.done:hover { opacity: .9; }
+.wk-row.single .wk-card.done { flex-basis: 100%; min-height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wk-card, .wk-card.next::before, .wk-card.next .wk-cta, .wk-card.next .wk-now { animation: none !important; }
+}
