@@ -32,7 +32,7 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) {
     --bg: #15171b;
     --surface: #1e2126;
@@ -636,7 +636,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { padding: var(--
 .tag[data-s="francais"] { --tag-bg: #dbc2ec; --tag-fg: #381837; }
 .tag[data-s="philo"]    { --tag-bg: #c2ecc2; --tag-fg: #212811; }
 .tag[data-s="svt"]      { --tag-bg: #caecc2; --tag-fg: #0b1c10; }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) .tag[data-s="maths"]    { --tag-bg: #16323e; --tag-fg: #c2dfec; }
   :root:not([data-theme="light"]) .tag[data-s="francais"] { --tag-bg: #33213f; --tag-fg: #dbc2ec; }
   :root:not([data-theme="light"]) .tag[data-s="philo"]    { --tag-bg: #1d3a1d; --tag-fg: #c2ecc2; }
@@ -653,7 +653,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { padding: var(--
   --shadow-card: 0 1px 2px rgb(20 18 22 / .04), 0 10px 30px rgb(20 18 22 / .06);
   --tint: 13%;
 }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) {
     --bg: #0b0b0c;
     --surface: #18181b;
@@ -741,7 +741,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 :root { --feature: #604b9f; }
 .current-week, .hero.card { background: var(--feature); box-shadow: 0 16px 40px color-mix(in srgb, var(--feature) 30%, transparent); }
 .current-week:hover { box-shadow: 0 20px 48px color-mix(in srgb, var(--feature) 40%, transparent); }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) { --tint: 15%; }
   :root:not([data-theme="light"]) .current-week, :root:not([data-theme="light"]) .hero.card { box-shadow: none; }
 }
@@ -820,7 +820,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 .tag[data-s="francais"] { --tag-bg: var(--c-pink);   --tag-fg: #141216; }
 .tag[data-s="philo"]    { --tag-bg: var(--c-lilac);  --tag-fg: #141216; }
 .tag[data-s="svt"]      { --tag-bg: var(--c-lime);   --tag-fg: #141216; }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) .tag[data-s="maths"]    { --tag-bg: var(--c-sky);   --tag-fg: #141216; }
   :root:not([data-theme="light"]) .tag[data-s="francais"] { --tag-bg: var(--c-pink);  --tag-fg: #141216; }
   :root:not([data-theme="light"]) .tag[data-s="philo"]    { --tag-bg: var(--c-lilac); --tag-fg: #141216; }
@@ -1038,7 +1038,7 @@ input:not([type=checkbox]):not([type=radio]), select, textarea { border-radius: 
 .ai-card h3 .icon { color: var(--primary); }
 .stat-mascot .m-face { color: var(--text); }
 .m-face svg path, .m-face svg circle, .m-face svg ellipse { --face: var(--text); }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) .m-face svg [stroke="#141216"] { stroke: #ecebef; }
   :root:not([data-theme="light"]) .m-face svg [fill="#141216"] { fill: #ecebef; }
   :root:not([data-theme="light"]) .current-week .m-face svg [stroke="#141216"], :root:not([data-theme="light"]) .hero.card .m-face svg [stroke="#141216"] { stroke: #111; }
@@ -1497,7 +1497,7 @@ html.lesson-open .toast { z-index: 300; }
   --grain-opacity: .07;
   --grain-blend: multiply;
 }
-@media (prefers-color-scheme: dark) {
+@media all {
   :root:not([data-theme="light"]) {
     --bg: #100D16; --surface: #1C1824; --surface-2: #272231; --border: #322C3D;
     --primary: #A57BFF; --primary-soft: #2A2140; --feature: #7B3FE4;
@@ -1601,3 +1601,91 @@ body::after {
 .stat-row .card, .new-corrections, .ai-card, .publish-card.is-published { --card: var(--page-surface); }
 .current-week .cta { background: var(--page-text); color: var(--page-bg); }
 .current-week .cta-arrow { background: var(--page-bg); color: var(--page-text); }
+
+
+/* =========================================================
+   Thème sombre à lueur violette (toute l'app)
+   ========================================================= */
+:root, :root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --bg: #0B0812;
+  --surface: #17121F;
+  --surface-2: #231C2E;
+  --border: rgb(255 255 255 / .08);
+  --text: #F3F0F8;
+  --muted: #A8A0B5;
+  --primary: #9D6BFF;
+  --primary-ink: #fff;
+  --primary-soft: #2A1F40;
+  --glow: #7B3FE4;
+  --calm-chip: #2A2236;
+  --ok: #3DDC84; --ok-soft: #12301F;
+  --ko: #FF5A6A; --ko-soft: #3A1520;
+  --mid: #FFB547; --mid-soft: #3A2A12;
+  --grain-opacity: .08; --grain-blend: screen;
+}
+html { background: var(--bg); }
+body {
+  background:
+    radial-gradient(110% 60% at 50% -12%, rgb(123 63 228 / .62) 0%, rgb(123 63 228 / .18) 45%, transparent 72%),
+    radial-gradient(50% 35% at 92% 4%, rgb(190 140 255 / .22), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* En-tête transparent : on voit la lueur derrière */
+.topbar { background: color-mix(in srgb, var(--bg) 35%, transparent); backdrop-filter: blur(14px); border-bottom: 0; }
+
+/* Cartes sombres, fine bordure claire comme un verre fumé */
+.card, .s-item, .item-card, .week-row, .step, .current-week, .hero.card, dialog, .notice-card {
+  border: 1px solid var(--border) !important;
+}
+.card, .s-item, .item-card, .notice-card { background: color-mix(in srgb, var(--surface) 92%, transparent); }
+
+/* Barres de progression qui brillent */
+.progress { background: #241D30 !important; }
+.progress-fill, .current-week .progress-fill, .subject-row .progress-fill {
+  background: linear-gradient(180deg, #C2A2FF 0%, #8B55F0 55%, #6E36D6 100%) !important;
+  box-shadow: 0 0 16px rgb(140 85 240 / .55), inset 0 1px 0 rgb(255 255 255 / .35);
+}
+.progress-fill.full { background: linear-gradient(180deg, #8CF5B4 0%, #3DDC84 60%, #22B865 100%) !important; box-shadow: 0 0 16px rgb(61 220 132 / .5); }
+
+/* Bouton principal : pilule violette lumineuse */
+.btn.primary, .lesson .btn.lesson-cta:not(:disabled) {
+  background: linear-gradient(180deg, #A97CFF, #7B3FE4) !important; border-color: transparent !important; color: #fff !important;
+  box-shadow: 0 0 22px rgb(123 63 228 / .45), inset 0 1px 0 rgb(255 255 255 / .3);
+}
+.lesson .lesson-foot.ok .btn.lesson-cta { background: linear-gradient(180deg, #6BF0A2, #22B865) !important; box-shadow: 0 0 22px rgb(61 220 132 / .4); color: #062313 !important; }
+.lesson .lesson-foot.ko .btn.lesson-cta { background: linear-gradient(180deg, #FF7F8B, #E5303D) !important; box-shadow: 0 0 22px rgb(255 90 106 / .4); }
+
+/* Carte « Cette semaine » : bouton blanc bien visible */
+.current-week .cta { background: #fff; color: #141216; }
+.current-week .cta-arrow { background: #7B3FE4; color: #fff; }
+
+/* Barre du bas : verre sombre, onglet actif violet lumineux */
+.bottomnav { background: rgb(23 18 31 / .86) !important; border: 1px solid var(--border); backdrop-filter: blur(14px); }
+.bn-item { color: var(--muted) !important; }
+.bn-item:hover { color: var(--text) !important; }
+.bn-item.active { background: linear-gradient(180deg, #A97CFF, #7B3FE4) !important; color: #fff !important; box-shadow: 0 0 18px rgb(123 63 228 / .5); }
+
+/* Étape en cours : contour violet lumineux */
+.step.next { border-color: var(--primary) !important; box-shadow: 0 0 0 1px var(--primary), 0 0 20px rgb(123 63 228 / .3); }
+
+/* Quiz plein écran : même fond */
+.lesson {
+  background:
+    radial-gradient(110% 55% at 50% -15%, rgb(123 63 228 / .55), transparent 70%),
+    var(--bg);
+}
+.lesson-foot { background: transparent; border-top-color: var(--border); }
+.lesson-foot.ok { background: #10291B; }
+.lesson-foot.ko { background: #33141B; }
+.tile { background: var(--surface); }
+.lesson-bar { background: #241D30; }
+.lesson-bar-fill { background: linear-gradient(180deg, #8CF5B4, #22B865); box-shadow: 0 0 14px rgb(61 220 132 / .5); }
+
+/* Connexion */
+.demo-card { border: 0 !important; }
+.demo-card { background: color-mix(in srgb, var(--surface) 92%, transparent) !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+.demo-card .muted { color: var(--muted) !important; }
