@@ -9,6 +9,8 @@
    ========================================================= */
 
 const INK = '#141216';
+const SHOE = '#4B2FB8';
+const BLUSH = '#FF7FA8';
 const ST = `stroke="${INK}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
 
 /* Corps de chaque personnage (formes plates, couleurs vives),
@@ -45,7 +47,7 @@ const MASCOTS = {
   ouch: {  // triangle corail, un peu maladroit
     color: '#FF5F6D',
     body: c => `<polygon points="100,22 178,152 22,152" fill="${c}" stroke="${c}" stroke-width="26" stroke-linejoin="round"/>`,
-    arms: [[36, 128], [164, 128]], hips: [78, 122], bottom: 164,
+    arms: [[26, 136], [174, 136]], hips: [78, 122], bottom: 164,
     face: { x: 100, ey: 104, d: 21, my: 134, f: 0.92 },
     own: 'ouch'
   },
@@ -76,7 +78,9 @@ function mLimbs(m, mood) {
     return `<g class="m-arm m-arm-${s < 0 ? 'l' : 'r'}" style="transform-origin:${x + 10}px ${y + 14}px">` +
       `<path d="${d}" stroke="${c}" stroke-width="8" stroke-linecap="round" fill="none"/><circle cx="${hx}" cy="${hy}" r="7.5" fill="${c}"/></g>`;
   };
-  const leg = (x, s) => `<path class="m-leg m-leg-${s < 0 ? 'l' : 'r'}" d="M${x} ${m.bottom - 8} L${x} 194 L${x + s * 10} 194" stroke="${c}" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+  // Jambes + petites chaussures
+  const leg = (x, s) => `<g class="m-leg m-leg-${s < 0 ? 'l' : 'r'}"><path d="M${x} ${m.bottom - 8} L${x} 186" stroke="${c}" stroke-width="8.5" stroke-linecap="round" fill="none"/>` +
+    `<rect x="${x - 10 + s * 4}" y="182" width="20" height="12" rx="6" fill="${SHOE}"/><rect x="${x - 10 + s * 4}" y="190" width="20" height="4" rx="2" fill="#fff" opacity=".85"/></g>`;
   return {
     back: leg(m.hips[0], -1) + leg(m.hips[1], 1),
     front: arm(m.arms[0], -1) + arm(m.arms[1], 1)
@@ -105,14 +109,19 @@ function mEyes(kind, { x, ey, d, f }) {
   switch (kind) {
     case 'closed': return both(c => `<path d="M${c - r(12)} ${ey} Q${c} ${ey + r(13)} ${c + r(12)} ${ey}" ${ST}/>`);
     case 'arc':    return both(c => `<path d="M${c - r(10)} ${ey + r(4)} Q${c} ${ey - r(10)} ${c + r(10)} ${ey + r(4)}" ${ST}/>`);
-    case 'dots':   return both(c => `<circle cx="${c}" cy="${ey + r(4)}" r="${r(7)}" fill="${INK}"/>`);
-    case 'big':    return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c + r(2)}" cy="${ey + r(1)}" r="${r(8)}" fill="${INK}"/>`);
-    case 'up':     return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c}" cy="${ey - r(6)}" r="${r(8)}" fill="${INK}"/>`);
+    case 'dots':   return both(c => `<circle cx="${c}" cy="${ey + r(4)}" r="${r(8)}" fill="${INK}"/><circle cx="${c + r(2.5)}" cy="${ey + r(1.5)}" r="${r(2.6)}" fill="#fff"/>`);
+    case 'big':    return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c + r(2)}" cy="${ey + r(1)}" r="${r(9)}" fill="${INK}"/><circle cx="${c + r(5)}" cy="${ey - r(3)}" r="${r(3.2)}" fill="#fff"/>`);
+    case 'up':     return both(c => `<circle cx="${c}" cy="${ey}" r="${r(17)}" fill="#fff"/><circle cx="${c}" cy="${ey - r(6)}" r="${r(9)}" fill="${INK}"/><circle cx="${c + r(3)}" cy="${ey - r(10)}" r="${r(3.2)}" fill="#fff"/>`);
     case 'x':      return both((c, s) => `<path d="M${c - s * r(10)} ${ey - r(11)} L${c + s * r(9)} ${ey} L${c - s * r(10)} ${ey + r(11)}" ${ST}/>`);
-    case 'angry':  return both((c, s) => `<circle cx="${c}" cy="${ey + r(2)}" r="${r(15)}" fill="#fff"/><circle cx="${c - s * r(3)}" cy="${ey + r(5)}" r="${r(7)}" fill="${INK}"/><path d="M${c + s * r(18)} ${ey - r(20)} L${c - s * r(14)} ${ey - r(8)}" stroke="${INK}" stroke-width="8" stroke-linecap="round"/>`);
+    case 'angry':  return both((c, s) => `<circle cx="${c}" cy="${ey + r(2)}" r="${r(15)}" fill="#fff"/><circle cx="${c - s * r(3)}" cy="${ey + r(5)}" r="${r(7.5)}" fill="${INK}"/><circle cx="${c - s * r(3) + r(3)}" cy="${ey + r(2)}" r="${r(2.6)}" fill="#fff"/><path d="M${c + s * r(18)} ${ey - r(20)} L${c - s * r(14)} ${ey - r(8)}" stroke="${INK}" stroke-width="8" stroke-linecap="round"/>`);
     case 'wink':   return `<path d="M${L - r(10)} ${ey + r(4)} Q${L} ${ey - r(10)} ${L + r(10)} ${ey + r(4)}" ${ST}/><circle cx="${R}" cy="${ey + r(3)}" r="${r(7)}" fill="${INK}"/>`;
     default: return '';
   }
+}
+
+function mBlush({ x, ey, d, f }) {
+  const r = n => +(n * f).toFixed(1);
+  return [-1, 1].map(s => `<ellipse cx="${x + s * (d + r(14))}" cy="${ey + r(22)}" rx="${r(10)}" ry="${r(6)}" fill="${BLUSH}" opacity=".55"/>`).join('');
 }
 
 function mMouth(kind, { x, my, f }) {
@@ -147,7 +156,7 @@ function mascot(name, o = {}) {
     ? '<g class="m-zzz" aria-hidden="true"><text x="150" y="40">z</text><text x="170" y="18">z</text></g>' : '';
   const a11y = o.label ? `role="img" aria-label="${esc(o.label)}"` : 'aria-hidden="true"';
   return `<span class="mascot m-${anim} m-${name} ${o.cls || ''}" style="--s:${size}px;--d:${delay}s" ${a11y}>` +
-    `<svg viewBox="-10 -14 220 220" focusable="false"><g class="m-all">${limbs.back}<g class="m-body">${m.body(m.color)}</g>${limbs.front}` +
+    `<svg viewBox="-10 -14 220 220" focusable="false"><g class="m-all">${limbs.back}<g class="m-body">${m.body(m.color)}</g>${limbs.front}<g class="m-blush">${mBlush(m.face)}</g>` +
     `<g class="m-eyes${blink}">${mEyes(eyes, m.face)}</g><g class="m-mouth">${mMouth(mouth, m.face)}</g></g>${zzz}</svg></span>`;
 }
 
@@ -192,7 +201,7 @@ function mascotFace(mood = 'happy', o = {}) {
   const delay = ((mascotSeq++ * 0.37) % 2.4).toFixed(2);
   const size = o.size || 150;
   return `<span class="m-face mascot m-${o.anim || 'bob'}" style="--s:${size}px;--fs:${size}px;--r:${o.rotate || 0}deg;--d:${delay}s" aria-hidden="true">` +
-    `<svg viewBox="0 0 200 200" focusable="false"><g class="m-all"><g class="m-eyes${blink}">${mEyes(eyes, FACE)}</g>` +
+    `<svg viewBox="0 0 200 200" focusable="false"><g class="m-all"><g class="m-blush">${mBlush(FACE)}</g><g class="m-eyes${blink}">${mEyes(eyes, FACE)}</g>` +
     `<g class="m-mouth">${mMouth(mouth, FACE)}</g></g></svg></span>`;
 }
 

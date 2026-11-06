@@ -1413,7 +1413,7 @@ html.lesson-open .toast { z-index: 300; }
 .teacher-card > .mascot { flex: none; }
 
 /* Liste des étapes */
-.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.week-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .step {
   display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 76px;
   border-radius: 20px; background: var(--surface); color: var(--text); text-decoration: none;
@@ -1468,7 +1468,7 @@ html.lesson-open .toast { z-index: 300; }
 @keyframes m-wave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-38deg); } }
 .m-sleep .m-arm { animation: none; }
 .m-hop .m-leg { animation: m-tuck .9s cubic-bezier(.3,.7,.4,1) infinite; transform-box: fill-box; transform-origin: top; }
-@keyframes m-tuck { 40% { transform: scaleY(.75); } }
+@keyframes m-tuck { 40% { transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .mascot .m-arm, .mascot .m-leg { animation: none !important; } }
 
 
@@ -1526,3 +1526,181 @@ body::after {
 .current-week .muted { color: rgb(20 18 22 / .65); }
 .current-week:hover { box-shadow: none; transform: translateY(-2px); }
 .lesson { background: var(--bg); }
+
+
+/* =========================================================
+   Thème v7 : style « jeu » — fond crème topographique, titres italiques
+   très gras, grandes cartes colorées, pilules noires et vertes
+   ========================================================= */
+@font-face { font-family: 'Archivo'; font-style: italic; font-weight: 800; font-display: swap; src: url(../fonts/archivo-latin-800-italic.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: italic; font-weight: 900; font-display: swap; src: url(../fonts/archivo-latin-900-italic.woff2) format('woff2'); }
+:root {
+  --font-title: 'Archivo', 'Inter', system-ui, sans-serif;
+  --bg: #F3EFE6;
+  --surface: #FFFFFF;
+  --surface-2: #ECE6DA;
+  --border: #E2DACB;
+  --primary: #0B8A73;
+  --primary-ink: #fff;
+  --primary-soft: #D7F2EA;
+  --feature: #0B8A73;
+  --teal: #12A68A;
+  --c-orange: #F5A443;
+  --c-pink: #FF6FAE;
+  --c-sky: #79C8F2;
+  --c-yellow: #FFD84A;
+  --c-lime: #8EDF8A;
+  --c-lilac: #B79BFF;
+  --topo-opacity: .07;
+  --grain-opacity: .05;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15131A; --surface: #211E28; --surface-2: #2C2834; --border: #37323F;
+    --primary: #2CC9A7; --primary-ink: #0C1F1A; --primary-soft: #133029; --feature: #12A68A;
+    --topo-opacity: .09;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15131A; --surface: #211E28; --surface-2: #2C2834; --border: #37323F;
+  --primary: #2CC9A7; --primary-ink: #0C1F1A; --primary-soft: #133029; --feature: #12A68A;
+  --topo-opacity: .09;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { filter: invert(1); } }
+:root[data-theme="dark"] body::before { filter: invert(1); }
+
+/* Lignes topographiques en fond */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url(../icons/topo.svg) 0 0 / 480px 480px repeat; opacity: var(--topo-opacity);
+}
+body { isolation: isolate; }
+
+/* Titres : grotesque italique très gras */
+h1, .display, .end-title, .q-prompt, .play-title span, .lesson-fb strong, .section-title {
+  font-family: var(--font-title); font-style: italic; font-weight: 900; letter-spacing: -.02em;
+}
+h1.display { font-size: clamp(2rem, 9vw, 2.7rem); line-height: 1.02; margin: 4px 0 18px; }
+.section-title { font-weight: 800; }
+
+/* Cartes blanches arrondies, sans ombre */
+.card { background: var(--surface); box-shadow: none; }
+
+/* Boutons : pilules, verts pour avancer */
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 700; }
+.btn.big { min-height: 52px; }
+
+/* Puces du haut : personnage + prénom, série, XP */
+.topchips { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 12px; flex-wrap: wrap; }
+.topchips .gami { margin: 0; }
+.chip-user {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border: 0; border-radius: 999px;
+  background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer;
+}
+.chip-user .mascot { background: var(--surface-2); border-radius: 50%; padding: 3px; --s: 34px !important; }
+.gami-chip { background: var(--surface); }
+
+/* Grande carte « jouer » */
+.play-card {
+  position: relative; display: block; overflow: hidden; text-decoration: none; color: var(--ink);
+  background: var(--c-orange); border-radius: 34px; padding: 26px 22px 24px; min-height: 430px;
+  transition: transform .15s ease;
+}
+.play-card:hover { transform: translateY(-3px) rotate(-.4deg); }
+.play-card:active { transform: scale(.985); }
+.play-title { text-align: center; position: relative; z-index: 2; }
+.play-title span {
+  display: inline-block; background: #fff; color: var(--ink); padding: 10px 20px 12px; border-radius: 26px;
+  font-size: clamp(1.6rem, 7vw, 2.1rem); line-height: 1.02; max-width: 92%;
+}
+.play-meta { text-align: center; margin: 12px 0 8px; font-weight: 600; font-size: .9rem; position: relative; z-index: 2; }
+.play-meta .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #18B26B; margin-right: 6px; box-shadow: 0 0 0 3px rgb(255 255 255 / .6); }
+.play-card .seg-progress { max-width: 220px; margin: 0 auto; position: relative; z-index: 2; }
+.play-hero { position: absolute; left: 50%; bottom: -34px; transform: translateX(-50%); z-index: 1; }
+.play-hero .mascot { --s: min(64vw, 250px) !important; }
+.play-cta {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3;
+  display: inline-flex; align-items: center; gap: 10px; padding: 16px 30px; border-radius: 999px;
+  background: var(--ink); color: #fff; font-weight: 700; white-space: nowrap;
+}
+.play-cta .icon { width: 18px; height: 18px; fill: currentColor; }
+.next-line { text-align: center; margin: 12px 0 0; color: var(--muted); }
+.sparkle { position: absolute; z-index: 1; animation: sparkle 2.4s ease-in-out infinite; }
+@keyframes sparkle { 0%, 100% { transform: scale(.6) rotate(0); opacity: .5; } 50% { transform: scale(1.1) rotate(25deg); opacity: 1; } }
+
+/* Barre de progression en tirets */
+.seg-progress { display: flex; gap: 5px; }
+.seg-progress span { flex: 1; height: 7px; border-radius: 999px; background: rgb(20 18 22 / .16); }
+.seg-progress span.on { background: var(--ink); }
+.seg-progress span.ko { background: var(--ko); }
+.seg-progress span.cur { background: rgb(20 18 22 / .38); }
+
+/* Bandeau « nouvelle correction » */
+.notice-card { background: var(--c-yellow); color: var(--ink); border-radius: 24px; }
+
+/* Barre du bas : pilule noire, onglet actif vert, autres en ronds blancs */
+.bottomnav { background: var(--ink) !important; gap: 8px; padding: 8px; }
+.bn-item { width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 50%; background: #fff; color: var(--ink) !important; }
+.bn-item:hover { background: #EDE7DC; }
+.bn-item.active { width: auto; padding: 0 20px; background: var(--teal) !important; color: #fff !important; }
+@media (min-width: 720px) { .bn-item:not(.active) { width: 48px; padding: 0; } .bn-item:not(.active) .bn-label { display: none; } }
+
+/* Ma semaine : les étapes en pilules blanches sur une carte jaune */
+.week-steps { background: var(--c-yellow); border-radius: 30px; padding: 12px; gap: 8px; }
+.step { background: #fff; color: var(--ink); border-radius: 999px; min-height: 64px; padding: 8px 16px 8px 8px; border-width: 3px; }
+.step .step-type { color: rgb(20 18 22 / .6); }
+.step-num { width: 46px; height: 46px; }
+.step.next { border-color: var(--teal); background: #fff; }
+.step.done { background: #E9F8EE; }
+.step .status.todo { background: #F3EFE6; }
+.step .status { white-space: nowrap; }
+@media (max-width: 420px) { .step { border-radius: 26px; } .step .status { font-size: .72rem; } }
+
+/* ---------- Quiz (mode leçon) ---------- */
+.lesson-seg { flex: 1; }
+.lesson-seg span { height: 8px; background: var(--surface-2); }
+.lesson-seg span.on { background: var(--teal); }
+.lesson-seg span.cur { background: var(--text); }
+.timer-chip { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; background: var(--surface); font-weight: 700; font-variant-numeric: tabular-nums; font-size: .9rem; }
+.timer-chip .icon { width: 16px; height: 16px; }
+.q-card { position: relative; border-radius: 32px; padding: 22px 16px 18px; margin-top: 46px; color: var(--ink); background: var(--c-yellow); }
+.q-c1 { background: var(--c-sky); } .q-c2 { background: var(--c-pink); } .q-c3 { background: var(--c-lime); }
+.q-mascot { position: absolute; right: 14px; top: -70px; }
+.q-card .lesson-kicker { color: rgb(20 18 22 / .6); margin: 0 0 6px; padding-right: 90px; }
+.q-prompt { font-size: clamp(1.35rem, 5.6vw, 1.7rem); line-height: 1.12; margin: 0 0 18px; color: var(--ink); }
+.q-card .tiles { gap: 10px; }
+.q-card .tile { background: #fff; color: var(--ink); border: 3px solid transparent; border-radius: 999px; padding: 10px 18px 10px 10px; font-size: 1rem; }
+.q-card .tile:active:not(:disabled) { margin-bottom: 0; transform: scale(.98); }
+.q-card .tile-key { width: 38px; height: 38px; border-radius: 50%; border: 0; background: #DDF3EC; color: var(--primary); font-weight: 800; font-size: .95rem; }
+.q-card .tiles.vf .tile { border-radius: 24px; padding: 18px; }
+.q-card .tile.picked { background: var(--teal); color: #fff; border-color: var(--teal); }
+.q-card .tile.picked .tile-key { background: #fff; color: var(--teal); }
+.q-card .tile.right { background: #18B26B; color: #fff; border-color: #18B26B; }
+.q-card .tile.wrong { background: var(--ko); color: #fff; border-color: var(--ko); }
+.q-card .tile.right .tile-key, .q-card .tile.wrong .tile-key { background: #fff; color: var(--ink); }
+.q-card .tile.dim { opacity: .55; }
+.q-card .lesson-input { background: #fff; border: 3px solid transparent; border-radius: 999px; padding: 14px 20px; color: var(--ink); }
+.q-card .lesson-input:focus { border-color: var(--teal); }
+.lesson-foot { border-top: 0; background: transparent; }
+.lesson .btn.lesson-cta { border-radius: 999px; min-height: 56px; }
+.lesson-foot.ok, .lesson-foot.ko, .lesson-foot.info { border-radius: 30px 30px 0 0; }
+
+/* Fin de quiz : écran sombre façon « podium » */
+.lesson.is-end { background: radial-gradient(120% 70% at 50% 30%, #3A3546 0%, #17141C 60%); color: #fff; }
+.lesson.is-end .lesson-icon, .lesson.is-end .timer-chip, .lesson.is-end .hearts { visibility: hidden; }
+.lesson.is-end .lesson-seg span { background: rgb(255 255 255 / .15); }
+.lesson.is-end .lesson-seg span.on { background: var(--teal); }
+.lesson.is-end .lesson-seg span.ko { background: var(--ko); }
+.pts-chip { display: inline-block; background: #fff; color: var(--ink); padding: 10px 18px; border-radius: 999px; font-family: var(--font-title); font-style: italic; font-weight: 900; font-size: 1.3rem; animation: xp-pop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.end-hero { position: relative; padding: 18px 40px 0; }
+.end-title { color: #fff; font-size: 2.4rem; }
+.lesson.is-end .muted, .lesson.is-end .end-streak { color: rgb(255 255 255 / .7); }
+.lesson.is-end .end-stat { border-color: transparent; background: rgb(255 255 255 / .08); }
+.lesson.is-end .end-stat strong { color: #fff; }
+.lesson.is-end .lesson-foot .btn.lesson-cta { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+.topchips { justify-content: flex-start; }
+.play-card { min-height: 470px; }
+.play-hero { bottom: 40px; }
+.play-hero .mascot { --s: min(58vw, 230px) !important; }
+.play-cta { bottom: 20px; }
