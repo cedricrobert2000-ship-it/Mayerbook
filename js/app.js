@@ -250,6 +250,8 @@ async function route(force = false) {
   if (Session.role === 'student' && !myMascot() && !$('#modal').open) openMascotPicker(true);
   renderTopbar();
   hideSplash();
+  // Carrousels de la semaine : on montre directement la carte à faire
+  $$('.wk-row').forEach(r => { const n = r.querySelector('.wk-card.next'); if (n) r.scrollLeft = n.offsetLeft - r.offsetLeft - 16; });
   document.title = 'Mayerbook';
 
   if (changed) {

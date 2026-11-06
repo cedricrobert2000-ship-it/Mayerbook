@@ -1854,3 +1854,46 @@ dialog.sheet > .btn.block { margin-top: 6px; }
 .path-end.done .node-btn { background: linear-gradient(180deg, #FFE27A, #FFB800); color: #5A3B00; box-shadow: 0 7px 0 #B57F00, 0 0 34px rgb(255 200 0 / .45); }
 .path-end.done .node-label { color: var(--text); }
 @media (prefers-reduced-motion: reduce) { .path-node.next .node-btn, .node-bubble { animation: none; } }
+
+
+/* =========================================================
+   Ma semaine : cartes en carrousels (une ligne par partie)
+   ========================================================= */
+.week-cards { margin-top: 18px; display: grid; gap: 22px; padding-bottom: 12px; }
+.wk-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.wk-head strong { flex: 1; font-family: var(--font-display); font-weight: 400; font-size: 1.25rem; letter-spacing: .01em; }
+.wk-head.complete .ph-icon { background: var(--ok-soft); color: var(--ok); }
+.wk-head.complete .ph-count { color: var(--ok); }
+.wk-row {
+  display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 16px;
+  margin: 0 -16px; padding: 4px 16px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.wk-row::-webkit-scrollbar { display: none; }
+.wk-card {
+  position: relative; overflow: hidden; flex: 0 0 min(74%, 280px); scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 6px; min-height: 176px; padding: 16px;
+  border-radius: 24px; text-decoration: none; color: var(--text);
+  background: color-mix(in srgb, var(--surface) 92%, transparent); border: 1px solid var(--border);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.wk-row.single .wk-card { flex-basis: 100%; }
+.wk-card:hover { transform: translateY(-2px); border-color: rgb(255 255 255 / .16); }
+.wk-card:active { transform: scale(.98); }
+.wk-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.wk-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--calm-chip); color: var(--muted); }
+.wk-icon .icon { width: 22px; height: 22px; }
+.wk-title { font-size: 1.08rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wk-sub { font-size: .82rem; color: var(--muted); }
+.wk-cta { margin-top: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: .9rem; color: var(--muted); }
+.wk-cta .icon { width: 16px; height: 16px; }
+.wk-card.done .wk-icon { background: var(--ok-soft); color: var(--ok); }
+.wk-card.next {
+  border-color: rgb(157 107 255 / .7);
+  background: linear-gradient(160deg, rgb(123 63 228 / .32), color-mix(in srgb, var(--surface) 92%, transparent) 70%);
+  box-shadow: 0 0 28px rgb(123 63 228 / .25);
+}
+.wk-card.next .wk-icon { background: linear-gradient(180deg, #B48CFF, #7B3FE4); color: #fff; }
+.wk-card.next .wk-cta { color: #fff; }
+.wk-now { padding: 4px 10px; border-radius: 999px; background: #fff; color: #141216; font-weight: 800; font-size: .78rem; }
+.wk-mascot { position: absolute; right: -14px; bottom: -18px; opacity: .9; pointer-events: none; }
+.wk-done { display: flex; align-items: center; gap: 14px; font-size: 1.05rem; }

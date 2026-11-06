@@ -126,52 +126,42 @@ const PATH_SECTIONS = {
   exercice: { title: 'Je m’entraîne',  icon: 'pencil' },
   quiz:     { title: 'Je joue',        icon: 'zap' }
 };
-const ZIGZAG = [0, 64, 0, -64];
 
 function weekPath(wid, steps, nextIdx) {
-  const me = myMascot() || 'zen';
-  let k = 0;   // position globale dans le zigzag
   const sections = TYPE_ORDER.map(type => {
     const its = steps.filter(i => i.type === type);
     if (!its.length) return '';
     const done = its.filter(i => isItemDone(i, S.subs[i.id])).length;
     const sec = PATH_SECTIONS[type];
-    const nodes = its.map((it, j) => {
-      const idx = steps.indexOf(it);
+    const cards = its.map(it => {
       const sub = S.subs[it.id];
       const isDone = isItemDone(it, sub);
-      const isNext = idx === nextIdx;
-      const x = ZIGZAG[k++ % ZIGZAG.length];
+      const isNext = steps.indexOf(it) === nextIdx;
       const [label, cls] = stepStatus(it, sub);
-      const side = x > 0 ? 'left' : 'right';
-      return `${j ? `<li class="path-dots" style="--x:${(x + ZIGZAG[(k - 2 + 4) % 4]) / 2}px" aria-hidden="true"><i></i><i></i><i></i></li>` : ''}
-        <li class="path-item" style="--x:${x}px">
-          <a class="path-node type-${it.type} ${isDone ? 'done' : isNext ? 'next' : 'todo'}" href="#/semaine/${wid}/${it.id}" aria-label="${esc(it.title)} : ${label}">
-            ${isNext ? `<span class="node-bubble">${idx === 0 ? 'Commence ici !' : 'C’est ici !'}</span>` : ''}
-            <span class="node-btn">${icon(isDone ? 'check' : TYPES[it.type].icon)}</span>
-            <span class="node-label">${esc(it.title)}</span>
-            ${isDone || cls !== 'todo' ? `<span class="node-status ${cls}">${label}</span>` : ''}
-          </a>
-          ${isNext ? `<span class="path-mascot ${side}">${mascot(me, { mood: 'happy', size: 76, anim: 'wiggle' })}</span>` : ''}
-        </li>`;
+      return `<a class="wk-card type-${it.type} ${isDone ? 'done' : isNext ? 'next' : 'todo'}" href="#/semaine/${wid}/${it.id}">
+        <span class="wk-top">
+          <span class="wk-icon">${icon(isDone ? 'check' : TYPES[it.type].icon)}</span>
+          ${isNext ? '<span class="wk-now">À toi !</span>' : `<span class="node-status ${cls}">${label}</span>`}
+        </span>
+        <strong class="wk-title">${esc(it.title)}</strong>
+        ${it.subject ? `<span class="wk-sub">${esc(it.subject)}</span>` : ''}
+        <span class="wk-cta">${isDone ? 'Revoir' : isNext ? 'C’est parti' : 'Ouvrir'} ${icon('arrow-right')}</span>
+        ${isNext ? `<span class="wk-mascot">${mascotFace('happy', { size: 64, rotate: -10 })}</span>` : ''}
+      </a>`;
     }).join('');
     return `
-      <section class="path-section type-${type}">
-        <div class="path-head ${done === its.length ? 'complete' : ''}">
+      <section class="wk-section type-${type}">
+        <div class="wk-head ${done === its.length ? 'complete' : ''}">
           <span class="ph-icon">${icon(sec.icon)}</span>
           <strong>${sec.title}</strong>
           <span class="ph-count">${done === its.length ? icon('check') : ''}${done}/${its.length}</span>
         </div>
-        <ol class="path">${nodes}</ol>
+        <div class="wk-row ${its.length === 1 ? 'single' : ''}">${cards}</div>
       </section>`;
   }).join('');
   const allDone = nextIdx < 0;
-  return `<div class="week-path">${sections}
-    <div class="path-end ${allDone ? 'done' : ''}">
-      <span class="node-btn">${icon('trophy')}</span>
-      <span class="node-label">${allDone ? 'Semaine terminée, bravo !' : 'Le trophée de la semaine'}</span>
-      ${allDone ? mascot(me, { mood: 'proud', size: 90, anim: 'bounce' }) : ''}
-    </div></div>`;
+  return `<div class="week-cards">${sections}
+    ${allDone ? `<div class="card wk-done">${mascot(myMascot() || 'zen', { mood: 'proud', size: 80, anim: 'bounce' })}<strong>Semaine terminée, bravo !</strong></div>` : ''}</div>`;
 }
 
 function heroProgress(p) {
