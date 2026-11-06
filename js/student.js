@@ -58,7 +58,10 @@ async function viewStudentHome(wid = null) {
   const me = myMascot() || 'zap';
 
   const head = `
-    <h1 class="hello-title">Bonjour ${esc(firstName(student.name))} !</h1>
+    <div class="hello-row">
+      <button class="hello-mascot" data-action="pick-mascot" aria-label="Changer de personnage">${mascot(me, { mood: 'happy', size: 64, anim: 'wiggle' })}</button>
+      <h1 class="hello-title">Bonjour ${esc(firstName(student.name))} !</h1>
+    </div>
     ${gamiHero()}
     ${fresh.length ? `<a class="card notice-card" href="#/progres">${icon('mail-check')}
       <span><strong>${fresh.length === 1 ? 'Une nouvelle correction' : `${fresh.length} nouvelles corrections`}</strong><br><span class="muted small">Ton prof a corrigé ton travail</span></span>
@@ -76,7 +79,6 @@ async function viewStudentHome(wid = null) {
 
   return `${head}
     <div class="week-stage">
-      <button class="stage-mascot" data-action="pick-mascot" aria-label="Changer de personnage">${mascot(me, { mood: left ? 'happy' : 'proud', size: 250, anim: 'peek' })}</button>
       <div class="card current-week week-card">
         ${weeks.length > 1 ? `<button class="week-switch" data-action="pick-week">${icon('calendar-days')} ${esc(when)} ${icon('chevron-down')}</button>` : `<p class="muted small">${esc(when)}</p>`}
         <h2>${week.title ? esc(week.title) : 'Mon travail de la semaine'}</h2>

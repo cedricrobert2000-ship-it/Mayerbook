@@ -2007,3 +2007,16 @@ dialog.sheet > .btn.block { margin-top: 6px; }
 .wp-pct.full { color: var(--ok); }
 .wp-pct .icon { width: 14px; height: 14px; }
 .week-card .week-switch { width: auto !important; max-width: 100%; text-align: left; }
+
+
+/* ---------- Pas de défilement horizontal parasite (mobile) ---------- */
+html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+#app { overflow-x: clip; }
+.wk-row { overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+.mascot svg { overflow: visible; }
+
+/* Personnage en haut, plus petit */
+.hello-row { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.hello-row .hello-title { margin: 0; }
+.hello-mascot { flex: none; border: 0; background: none; padding: 0; cursor: pointer; }
+.week-stage { padding-top: 0; }
