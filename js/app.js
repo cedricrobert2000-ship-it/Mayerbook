@@ -108,7 +108,17 @@ function installButton() {
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; renderTopbar(); });
 window.addEventListener('appinstalled', () => { installPrompt = null; renderTopbar(); toast('Mayerbook est installée'); });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => reg.update())
+      .catch(() => {});
+  });
+  // Nouvelle version installée : on recharge une fois pour l'afficher
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
 }
 
 async function renderTopbar() {

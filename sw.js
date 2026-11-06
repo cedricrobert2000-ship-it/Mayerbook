@@ -5,7 +5,7 @@
  * possible, la copie en cache seulement hors connexion.
  * Les appels à Supabase ne sont jamais mis en cache.
  */
-const CACHE = 'mayerbook-v3';
+const CACHE = 'mayerbook-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', event => {
@@ -26,8 +26,10 @@ self.addEventListener('fetch', event => {
   // Uniquement les fichiers de l'app (même origine, lecture)
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
 
+  // « no-cache » : le navigateur revérifie toujours auprès du serveur
+  // (sinon GitHub Pages laisse une ancienne version jusqu'à 10 minutes)
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(res => {
         if (res.ok) {
           const copy = res.clone();
