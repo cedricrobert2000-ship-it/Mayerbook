@@ -2010,9 +2010,11 @@ dialog.sheet > .btn.block { margin-top: 6px; }
 
 
 /* ---------- Pas de défilement horizontal parasite (mobile) ---------- */
-html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
 #app { overflow-x: clip; }
-.wk-row { overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+/* Carrousels : aimantation douce (Safari iOS rebondissait avant la dernière carte),
+   et le glissement ne se transmet pas à la page */
+.wk-row { overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+.wk-row > .wk-card:last-child { scroll-snap-align: end; }
 .mascot svg { overflow: visible; }
 
 /* Personnage en haut, plus petit */
